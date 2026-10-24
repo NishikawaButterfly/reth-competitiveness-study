@@ -30,6 +30,7 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 | `reth_study/holders_by_entity.csv` | Net change per identified protocol or treasury, since January 2024 and since Saturn 1 |
 | `reth_study/holders_*.csv` (other) | Top leavers and gainers with balances at both ends, concentration, where the top leavers sent their rETH, worst weeks, unlabelled large addresses, and how each week was fetched and checked ([`analysis/holders.py`](analysis/holders.py)) |
 | `analysis/labels.csv` | Who each identified address is, and the evidence for it |
+| `reth_study/lending_*.csv` | rETH and wstETH supplied on Aave v3 and Spark, the WETH borrow rate, the looping spread, and whether supply follows it ([`analysis/lending.py`](analysis/lending.py)) |
 | `reth_study/chart_*.png` | Charts |
 | `results/reth_study_v2_executed.ipynb` | The notebook as last executed, with outputs |
 

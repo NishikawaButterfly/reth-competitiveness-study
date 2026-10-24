@@ -9,7 +9,9 @@ on:
       - "README.md"
       - "analysis/**"
       - "tests/test_holders.py"
+      - "tests/test_lending.py"
       - ".github/workflows/holders.yml"
+      - ".github/workflows/lending.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 0"   # Sundays 06:17 UTC: add the new week

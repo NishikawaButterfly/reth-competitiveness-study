@@ -1,0 +1,54 @@
+name: rETH in lending markets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "analysis/lending.py"
+      - "analysis/holders.py"
+      - "tests/test_lending.py"
+      - ".github/workflows/lending.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "53 7 3 * *"   # 3rd of each month, 07:53 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: study
+  cancel-in-progress: false
+
+jobs:
+  lending:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Offline test
+        run: python tests/test_lending.py
+      - name: Spread and supply on Aave v3 and Spark
+        env:
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          INFURA_KEY: ${{ secrets.INFURA_KEY }}
+        run: python analysis/lending.py
+      - name: Commit results
+        if: always()
+        run: |
+          git config user.name "Nishikawa"
+          git config user.email "130159335+NishikawaButterfly@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp reth_study/lending_* reth_study/chart_lending_spread.png "$RUNNER_TEMP/out/" 2>/dev/null || true
+          for attempt in 1 2 3; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp "$RUNNER_TEMP"/out/* reth_study/ 2>/dev/null || true
+            git add reth_study
+            if git diff --cached --quiet; then echo "Nothing new to commit"; break; fi
+            git commit -q -m "Update lending analysis [skip ci]"
+            if git push -q; then break; fi
+            sleep 10
+          done

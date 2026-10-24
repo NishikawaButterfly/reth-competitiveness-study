@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "analysis/**"
+      - "analysis/holders.py"
+      - "analysis/labels.csv"
       - "tests/test_holders.py"
       - ".github/workflows/holders.yml"
   workflow_dispatch:
