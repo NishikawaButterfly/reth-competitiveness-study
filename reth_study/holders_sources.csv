@@ -14,7 +14,7 @@ cloudflare-eth.com,rpc,False,True,0,,,,False
 eth-mainnet.public.blastapi.io,rpc,False,True,0,,,,False
 ethereum-public.nodies.app,rpc,False,True,0,,,,False
 ethereum.public.blockpi.network/v1/rpc/public,rpc,False,True,0,,,,False
-eth-mainnet.g.alchemy.com/v2/demo,rpc,False,False,0,,,RateLimited: HTTP 429,False
+eth-mainnet.g.alchemy.com/v2/demo,rpc,False,True,0,,,,False
 rpc.eth.gateway.fm,rpc,False,False,0,,,"RuntimeError: HTTP 503: {""jsonrpc"":""2.0"",""result"":{""code"":503,""message"":""server unavailable""},""id"":1}",False
 eth.meowrpc.com,rpc,False,True,0,,,,False
 mainnet.gateway.tenderly.co,rpc,False,True,0,,,,False
