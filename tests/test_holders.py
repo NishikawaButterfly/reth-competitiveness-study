@@ -23,6 +23,7 @@ rng = np.random.default_rng(3)
 WHALE = "0x" + "a1" * 20          # holds 10,000; burns 4,000 and sells 2,000 into the pool
 POOL = "0x" + "c2" * 20           # a contract holding 5,000 that redeems 4,000: net -2,000
 OTHER = "0x" + "e3" * 20          # holds 85,000 and never moves
+BIGW = "0x" + "b4" * 20           # an unlabelled wallet that gains 700: a "large wallet"
 small = ["0x" + f"{i:040x}" for i in range(1, 60)]
 INIT = {WHALE: 10_000 * 10**18, POOL: 5_000 * 10**18, OTHER: 85_000 * 10**18}
 S0 = sum(INIT.values())
@@ -45,6 +46,7 @@ for a in small:                                              # small holders min
 add(20_500, WHALE, ZERO, 4_000)                              # whale burns in week 3
 add(41_000, WHALE, POOL, 2_000)                              # whale sells into the pool in week 7
 add(41_200, POOL, ZERO, 4_000)                               # the pool redeems 4,000
+add(30_500, ZERO, BIGW, 700)                                 # a large unlabelled wallet mints 700
 for _ in range(1_000):                                       # noise between small holders
     f, t = rng.choice(small, 2, replace=False)
     add(int(rng.integers(10_001, 60_000)), f, t, float(rng.uniform(0.01, 0.5)))
@@ -151,8 +153,9 @@ holders.pause = lambda s: None
 holders.CACHE_DIR = os.path.join(work, "cache")
 holders.SATURN1 = str(dates[6].date())
 holders.LABELS_FILE = os.path.join(work, "labels.csv")
-pd.DataFrame({"address": [POOL, WHALE], "label": ["Test pool", "Test whale"],
-              "category": ["DEX liquidity", "Large wallet"]}).to_csv(holders.LABELS_FILE, index=False)
+pd.DataFrame({"address": [POOL, WHALE], "label": ["Test pool", "Test whale"], "entity": ["Test DEX", "Test whale"],
+              "category": ["DEX liquidity", "Large wallets"], "evidence": ["test", "test"]}).to_csv(
+    holders.LABELS_FILE, index=False)
 
 # ---- unit checks ----------------------------------------------------------------------------
 lg = rpc_log(next(e for e in LOGS if e[2] == ZERO))
@@ -196,7 +199,17 @@ conc = pd.read_csv("reth_study/holders_concentration.csv")
 assert conc.loc[0, "top1_share"] > 0.5, conc.loc[0, "top1_share"]
 assert abs(conc.loc[0, "supply_change_reth"] - (supply[-1] - supply[0])) < 1e-6
 cat = pd.read_csv("reth_study/holders_by_category.csv", index_col=0)
-assert "DEX liquidity" in cat.index and abs(cat["share"].sum() - 1) < 1e-9
+assert abs(cat.loc["DEX liquidity", "net_since_2024"] + 2_000) < 1e-6
+assert abs(cat.loc["Large wallets", "net_since_2024"] - (-6_000 + 700)) < 1e-6, cat
+assert abs(cat.loc["Total (= supply change)", "net_since_2024"] - (supply[-1] - supply[0])) < 1e-6
+assert abs(cat.drop(index="Total (= supply change)")["net_since_saturn1"].sum()
+           - cat.loc["Total (= supply change)", "net_since_saturn1"]) < 1e-6
+ent = pd.read_csv("reth_study/holders_by_entity.csv", index_col=0)
+assert abs(ent.loc["Test DEX", "net_since_2024"] + 2_000) < 1e-6
+cp = pd.read_csv("reth_study/holders_counterparties.csv")
+w = cp[cp["address"] == WHALE].iloc[0]
+assert w["recipient"] == ZERO and abs(w["share_of_sent"] - 4_000 / 6_000) < 1e-9, w
+assert os.path.exists("reth_study/chart_supply_change_by_holder.png")
 s1 = pd.read_csv("reth_study/holders_top_leavers_since_saturn1.csv", index_col=0)
 assert {WHALE, POOL} <= set(s1.index) and abs(s1.loc[POOL, "net"] + 2_000) < 1e-6
 worst = pd.read_csv("reth_study/holders_worst_weeks.csv")

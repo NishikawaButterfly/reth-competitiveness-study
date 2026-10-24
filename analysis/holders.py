@@ -439,12 +439,15 @@ def concentration(net, window):
 
 
 def load_labels():
-    """Curated labels: analysis/labels.csv with columns address, label and optional category."""
+    """Curated labels: analysis/labels.csv with columns address, label, entity, category, evidence."""
     if not os.path.exists(LABELS_FILE):
         return {}
     lab = pd.read_csv(LABELS_FILE, dtype=str).fillna("")
-    cat = lab["category"] if "category" in lab else [""] * len(lab)
-    return {a.lower(): {"label": l, "category": c} for a, l, c in zip(lab["address"], lab["label"], cat)}
+    out = {}
+    for _, r in lab.iterrows():
+        out[r["address"].lower()] = {"label": r.get("label", ""), "entity": r.get("entity", "") or r.get("label", ""),
+                                     "category": r.get("category", ""), "evidence": r.get("evidence", "")}
+    return out
 
 
 BS_FAILS = [0]
@@ -459,6 +462,7 @@ def blockscout_info(addr):
         urls.append((f"https://api.blockscout.com/1/api/v2/addresses/{addr}", {"apikey": KEYS["BLOCKSCOUT_KEY"]}))
     urls.append((f"https://eth.blockscout.com/api/v2/addresses/{addr}", {}))
     for url, params in urls:
+        pause(0.25)
         try:
             r = requests.get(url, params=params, timeout=20, headers={**UA, "accept": "application/json"})
             if r.status_code != 200:
@@ -567,7 +571,30 @@ def onchain_profile(addr, rpcs):
     if t0 and t1:
         syms = [decode_string(view(rpcs, "0x" + t[-40:], "0x95d89b41") or "0x") or "?" for t in (t0, t1)]
         out.append(f"pool {syms[0]}/{syms[1]}")
+    ilk = view(rpcs, addr, "0xc5ce281e")  # Maker collateral adapters
+    if ilk and len(ilk) == 66:
+        out.append(f"Maker join {decode_string(ilk)}")
+    for sel, what in (("0xb2016bd4", "collateral"), ("0xf8d89898", "debt token"), ("0x2495a599", "underlying")):
+        a = word_addr(view(rpcs, addr, sel))
+        if a:
+            out.append(f"{what} {symbol_of(rpcs, a)}")
+    main_ = word_addr(view(rpcs, addr, "0xdffeadd0"))  # Reserve Protocol components
+    if main_:
+        rt = word_addr(view(rpcs, main_, "0x40c65f72"))
+        if rt:
+            out.append(f"Reserve RToken {symbol_of(rpcs, rt)}")
     return "; ".join(out)
+
+
+def word_addr(res):
+    """An address returned by eth_call, or None (no answer or the zero address)."""
+    if not res or len(res) != 66 or int(res[-40:], 16) == 0:
+        return None
+    return "0x" + res[-40:]
+
+
+def symbol_of(rpcs, token):
+    return decode_string(view(rpcs, token, "0x95d89b41") or "0x") or short(token)
 
 
 def ens_reverse(addr, rpcs):
@@ -643,6 +670,90 @@ def enrich(df, labels, rpcs, archive, b_start, b_end):
         out["balance_end"] = [balance(archive, a, b_end) for a in out.index]
         out["balance_check"] = (out["balance_end"] - out["balance_start"] - out["net"]).abs() < 1e-6
     return out
+
+
+BIG = 500.0  # rETH: an unlabelled address that moved at least this much is shown on its own
+CATEGORY_ORDER = ["Restaking", "Lending and CDPs", "DEX liquidity", "L2 bridges", "Funds and DAO treasuries",
+                  "Large wallets", "Unidentified contracts", "Other addresses"]
+
+
+def kind_of(addr, rpcs, cache={}):
+    """wallet (no code, or an EIP-7702 account), safe (a Safe multisig) or contract."""
+    if addr in cache:
+        return cache[addr]
+    kind = None
+    for src in rpcs[:3]:
+        try:
+            code = src.call("eth_getCode", [addr, "latest"], timeout=20)
+            kind = "wallet" if len(code) <= 2 or code.lower().startswith("0xef0100") else "contract"
+            break
+        except Exception:
+            continue
+    if kind == "contract" and view(rpcs, addr, "0xe75235b8"):
+        kind = "safe"
+    cache[addr] = kind
+    return kind
+
+
+def categorize(net, labels, rpcs):
+    """Holder type of every address: its labelled category; else a large wallet or an
+    unidentified contract when it moved at least BIG rETH; else other addresses."""
+    cats = {}
+    for a, v in net.loc[net.index != ZERO, "net"].items():
+        if labels.get(a, {}).get("category"):
+            cats[a] = labels[a]["category"]
+        elif abs(v) >= BIG:
+            cats[a] = {"wallet": "Large wallets", "safe": "Large wallets",
+                       "contract": "Unidentified contracts"}.get(kind_of(a, rpcs), "Other addresses")
+        else:
+            cats[a] = "Other addresses"
+    return pd.Series(cats, dtype=str)
+
+
+def decompose(nets, labels, rpcs):
+    """Net rETH change by holder type, one column per window; each column adds up to the supply change."""
+    cols = {}
+    for name, net in nets.items():
+        s = net.loc[net.index != ZERO, "net"]
+        g = s.groupby(categorize(net, labels, rpcs))
+        cols[f"net_{name}"], cols[f"addresses_{name}"] = g.sum(), g.size()
+    df = pd.DataFrame(cols).fillna(0)
+    df = df.reindex([c for c in CATEGORY_ORDER if c in df.index] + [c for c in df.index if c not in CATEGORY_ORDER])
+    df.loc["Total (= supply change)"] = df.sum()
+    return df
+
+
+def by_entity(nets, labels):
+    """Net change per labelled entity (one entity can have several addresses, e.g. after a migration)."""
+    ent = pd.Series({a: v["entity"] for a, v in labels.items() if v.get("entity")})
+    cat = {v["entity"]: v["category"] for v in labels.values() if v.get("entity")}
+    df = pd.DataFrame({f"net_{name}": net["net"].reindex(ent.index).fillna(0).groupby(ent).sum()
+                       for name, net in nets.items()})
+    df.insert(0, "category", [cat.get(e, "") for e in df.index])
+    df.index.name = "entity"
+    return df.sort_values(df.columns[1])
+
+
+def who(addr, labels, rpcs):
+    if addr == ZERO:
+        return "rETH contract (burn: redeemed for ETH)"
+    if labels.get(addr, {}).get("label"):
+        return labels[addr]["label"]
+    return display_name(address_info(addr, rpcs), addr)
+
+
+def counterparties(tr, addrs, labels, rpcs, k=3):
+    """Where each address sent its rETH: the k largest recipients."""
+    rows = []
+    for a in addrs:
+        out = tr[(tr["from"] == a) & (tr["to"] != a)]
+        total = float(out["amount"].sum())
+        if not total:
+            continue
+        for r, v in out.groupby("to")["amount"].sum().nlargest(k).items():
+            rows.append({"address": a, "who": who(a, labels, rpcs), "recipient": r,
+                         "recipient_who": who(r, labels, rpcs), "reth": v, "share_of_sent": v / total})
+    return pd.DataFrame(rows)
 
 
 def display_name(row, addr):
@@ -734,12 +845,24 @@ def main():
     top_s1 = enrich(top_s1, labels, rpcs, archive, int(blk[s_idx]), int(blk[-1]))
     top_s1.insert(5, "share_of_total_decrease", -top_s1["net"] / conc_s1["total_decrease_reth"])
     top_s1.to_csv(os.path.join(OUT_DIR, "holders_top_leavers_since_saturn1.csv"))
-    if top["category"].astype(bool).any():
-        cat = top.assign(category=top["category"].replace("", "Unlabelled")).groupby("category")["net"].sum()
-        cat["Outside the top 30"] = -(conc["total_decrease_reth"] + top["net"].sum())
-        cat = (-cat).sort_values(ascending=False).rename("decrease_reth").to_frame()
-        cat["share"] = cat["decrease_reth"] / conc["total_decrease_reth"]
-        cat.to_csv(os.path.join(OUT_DIR, "holders_by_category.csv"))
+    nets = {"since_2024": net, "since_saturn1": net_s1}
+    dec = decompose(nets, labels, rpcs)
+    for name, change in (("since_2024", sup[-1] - sup[0]), ("since_saturn1", sup[-1] - sup[s_idx])):
+        if abs(dec.loc["Total (= supply change)", f"net_{name}"] - change) > 1e-4:
+            raise RuntimeError("Holder types do not add up to the supply change: stop and review.")
+    dec.to_csv(os.path.join(OUT_DIR, "holders_by_category.csv"))
+    if labels:
+        by_entity(nets, labels).to_csv(os.path.join(OUT_DIR, "holders_by_entity.csv"))
+    big = pd.DataFrame({"net_since_2024": net["net"], "net_since_saturn1": net_s1["net"]}).fillna(0)
+    big = big[(big.index != ZERO) & ~big.index.isin(list(labels))
+              & ((big["net_since_2024"].abs() >= BIG) | (big["net_since_saturn1"].abs() >= BIG))].copy()
+    big["kind"] = [kind_of(a, rpcs) for a in big.index]
+    big["who"] = [display_name(address_info(a, rpcs), a)
+                  if k == "contract" and max(abs(x), abs(y)) >= 1_000 else ""
+                  for a, k, x, y in zip(big.index, big["kind"], big["net_since_2024"], big["net_since_saturn1"])]
+    big.sort_values("net_since_2024").to_csv(os.path.join(OUT_DIR, "holders_unlabelled_big.csv"))
+    counterparties(tr, list(top.index[:10]), labels, rpcs).to_csv(
+        os.path.join(OUT_DIR, "holders_counterparties.csv"), index=False)
 
     # 5. Biggest outflow weeks: who drove them
     rows = []
@@ -747,10 +870,9 @@ def main():
         wn = net_by_address(tr[tr["week"] == k])
         wn = wn[wn.index != ZERO].sort_values("net").head(3)
         for a, r in wn.iterrows():
-            info = labels.get(a, {}) or address_info(a, rpcs)
             rows.append({"week_ending": panel["date"].iloc[k].date(),
                          "week_net_flow_eth": panel["net_flow_eth"].iloc[k],
-                         "address": a, "net_reth": r["net"], "who": display_name(info, a)})
+                         "address": a, "net_reth": r["net"], "who": who(a, labels, rpcs)})
     pd.DataFrame(rows).to_csv(os.path.join(OUT_DIR, "holders_worst_weeks.csv"), index=False)
 
     # 6. Quarterly timing of the top 10 leavers
@@ -780,6 +902,25 @@ def main():
     ax.grid(alpha=0.3, axis="x")
     fig.tight_layout()
     fig.savefig(os.path.join(OUT_DIR, "chart_top_leavers.png"), dpi=150)
+
+    # 8. Chart: the supply change split by holder type (waterfall)
+    steps = dec.drop(index="Total (= supply change)")["net_since_2024"]
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    cum = 0.0
+    for i, (c, v) in enumerate(steps.items()):
+        ax.bar(i, v / 1e3, bottom=cum / 1e3, color="#c44e52" if v < 0 else "#55a868", width=0.7)
+        ax.text(i, (cum + v) / 1e3, f"{v / 1e3:+,.1f}k", ha="center", va="top" if v < 0 else "bottom", fontsize=8)
+        cum += v
+    ax.bar(len(steps), cum / 1e3, color="#4c72b0", width=0.7)
+    ax.text(len(steps), cum / 1e3, f"{cum / 1e3:+,.1f}k", ha="center", va="top", fontsize=8)
+    ax.set_xticks(range(len(steps) + 1), [*steps.index, "rETH supply change"], rotation=25, ha="right")
+    ax.axhline(0, color="black", lw=0.8)
+    ax.set_ylabel("rETH (thousand)")
+    ax.set_title(f"Who the rETH supply change came from, {w_all}")
+    ax.grid(alpha=0.3, axis="y")
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUT_DIR, "chart_supply_change_by_holder.png"), dpi=150)
+    print(dec.round(1).to_string())
 
     show = [c for c in ("net", "share_of_total_decrease", "is_contract", "label", "profile", "name", "tags",
                         "balance_start", "balance_end") if c in top]
