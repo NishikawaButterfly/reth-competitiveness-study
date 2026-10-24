@@ -1,22 +1,25 @@
 address,label,entity,category,evidence
-0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2,EigenLayer rETH strategy,EigenLayer,Restaking,Contract StrategyBaseTVLLimits (EigenLayer strategy) via Blockscout; underlying token checked on-chain
+0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2,EigenLayer rETH strategy,EigenLayer,Restaking,Contract StrategyBaseTVLLimits (EigenLayer strategy) via Blockscout; underlyingToken() = rETH on-chain
 0x03bf48b8a1b37fbead1ecabcf15b98b924ffa5ac,Symbiotic rETH default collateral,Symbiotic,Restaking,Etherscan name tag Symbiotic: DC_rETH Token
 0x9985df20d7e9103ecbceb16a84956434b6f06ae8,Spark spRETH,Spark,Lending and CDPs,Token name Spark rETH (AToken) via Blockscout
 0xcc9ee9483f662091a1de4795249e24ac0ac2630f,Aave v3 aEthrETH,Aave v3,Lending and CDPs,Token name Aave v3 rETH (AToken) via Blockscout
-0xe0e255fd5281bec3bb8fa1569a20097d9064e445,Prisma Finance rETH TroveManager,Prisma Finance,Lending and CDPs,Contract TroveManager; 8346 rETH left in the week of the Prisma exploit (28 March 2024); debt token checked on-chain
-0x2b0024ecee0626e9cfb5f0195f69dcac5b759dc9,Gravita Active Pool,Gravita,Lending and CDPs,Etherscan name tag Gravita Protocol: Active Pool
+0xe0e255fd5281bec3bb8fa1569a20097d9064e445,Prisma Finance rETH TroveManager,Prisma Finance,Lending and CDPs,Contract TroveManager; collateralToken() = rETH and debtToken() = mkUSD (Prisma's stablecoin) on-chain; 8346 rETH left in the week of the Prisma exploit (28 March 2024)
+0x2b0024ecee0626e9cfb5f0195f69dcac5b759dc9,Gravita Active Pool,Gravita,Lending and CDPs,Etherscan name tag Gravita Protocol: Active Pool; debtToken() = GRAI on-chain
 0x9074d72cc82dad1e13e454755aa8f144c479532f,Liquity V2 rETH Active Pool,Liquity V2,Lending and CDPs,Etherscan name tag Liquity V2: Active Pool rETH
 0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb,Morpho Blue,Morpho,Lending and CDPs,Contract Morpho (Morpho Blue singleton) via Blockscout
-0xc6424e862f1462281b0a5fac078e4b63006bdebf,Maker RETH-A join,Maker (Sky),Lending and CDPs,Contract GemJoin via Blockscout; ilk checked on-chain
+0xc6424e862f1462281b0a5fac078e4b63006bdebf,Maker RETH-A join,Maker (Sky),Lending and CDPs,Contract GemJoin via Blockscout; ilk() = RETH-A on-chain
 0xa17581a9e3356d9a858b789d68b4d866e593ae94,Compound III cWETHv3,Compound III,Lending and CDPs,Contract Comet (Compound III) via Blockscout
 0xba12222222228d8ba445958a75a0704d566bf2c8,Balancer V2 Vault,Balancer,DEX liquidity,Balancer bug bounty scope: V2 Vault
 0xba1333333333a1ba1108e8412f11850a5c319ba9,Balancer V3 Vault,Balancer,DEX liquidity,Balancer bug bounty scope: V3 Vault
-0x2201d2400d30bfd8172104b4ad046d019ca4e7bd,PancakeSwap v3 pool,PancakeSwap,DEX liquidity,Contract PancakeV3Pool via Blockscout
+0x2201d2400d30bfd8172104b4ad046d019ca4e7bd,PancakeSwap v3 pool,PancakeSwap,DEX liquidity,Contract PancakeV3Pool via Blockscout; token0/token1 = rETH/WETH on-chain
 0xa3a7b6f88361f48403514059f1f16c8e78d60eec,Arbitrum L1 ERC20 gateway,Arbitrum bridge,L2 bridges,Etherscan label Arbitrum One: L1 ERC20 Gateway
 0x99c9fc46f92e8a1c0dec1b1747d010903e884be1,Optimism L1 standard bridge,Optimism bridge,L2 bridges,Etherscan label Optimism: Gateway
 0x3154cf16ccdb4c6d922629664174b904d80f2c35,Base L1 standard bridge,Base bridge,L2 bridges,Base documentation: contract addresses
-0xcafeabed7e0653afe9674a3ad862b78db3f36e60,Nexus Mutual capital pool (old),Nexus Mutual,Funds and DAO treasuries,Contract Pool; its 13358 rETH match the July 2023 swap of 14390 ETH into rETH (The Block); sent them in one transfer (see holders_counterparties.csv)
+0xcafeabed7e0653afe9674a3ad862b78db3f36e60,Nexus Mutual capital pool (old),Nexus Mutual,Funds and DAO treasuries,Contract Pool; its 13358 rETH match the July 2023 swap of 14390 ETH into rETH (The Block); sent all of it to 0xcafeaf6e... in one transfer
 0xcafea91714e55756c125b509274ede9bc91697cb,Nexus Mutual capital pool (new),Nexus Mutual,Funds and DAO treasuries,Contract Pool at the same 0xcafea prefix (see holders_counterparties.csv)
 0x4f2083f5fbede34c2714affb3105539775f7fe64,ENS DAO endowment,ENS DAO,Funds and DAO treasuries,ENS name endowment.ensdao.eth (Safe)
 0x464c71f6c2f760dda6093dcb91c24c39e5d6e18c,Aave Collector (Aave DAO treasury),Aave DAO,Funds and DAO treasuries,Contract CollectorWithCustomImpl via Blockscout
-0x608e1e01ef072c15e5da7235ce793f4d24eca67b,Reserve RToken backing manager,Reserve Protocol,Funds and DAO treasuries,Contract BackingManagerP1 via Blockscout; RToken checked on-chain
+0x608e1e01ef072c15e5da7235ce793f4d24eca67b,Reserve ETH+ backing manager,Reserve Protocol,Funds and DAO treasuries,Contract BackingManagerP1 via Blockscout; main().rToken() = ETH+ on-chain
+0xcafeaf6ea90cb931ae43a8cf4b25a73a24cf6158,Nexus Mutual capital pool (interim),Nexus Mutual,Funds and DAO treasuries,Contract Pool at the same 0xcafea prefix; received the old pool's 13358 rETH in one transfer
+0x2570f1bd5d2735314fc102eb12fc1afe9e6e7193,TryLSD liquidity pool,TryLSD pool,DEX liquidity,Token symbol TryLSD on-chain
+0x062bf725dc4cdf947aa79ca2aaccd4f385b13b5c,Alchemix alETH (rETH collateral),Alchemix,Lending and CDPs,debtToken() = alETH on-chain
