@@ -26,6 +26,7 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 | `reth_study/demand_response.csv` | Regression results for lags 1 to 4 and a robustness check |
 | `reth_study/fee_scenarios.csv` | Scenario projections |
 | `reth_study/quarterly.csv` | Quarterly yield gap, the part the fee explains, and flows |
+| `reth_study/holders_*.csv` | Who is leaving: net rETH change by address, concentration, top leavers, worst weeks ([`analysis/holders.py`](analysis/holders.py)) |
 | `reth_study/chart_*.png` | Charts |
 | `results/reth_study_v2_executed.ipynb` | The notebook as last executed, with outputs |
 
