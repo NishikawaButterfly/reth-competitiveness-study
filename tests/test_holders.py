@@ -89,10 +89,15 @@ class FakeRpc(holders.RpcSource):
                 out = [e for e in out if not (e[2] == ZERO and e[0] >= self.drop)]
             return [rpc_log(e) for e in out]
         if method == "eth_call":
-            data, block = params[0]["data"], int(params[1], 16)
-            if data == "0x18160ddd":
-                return hex(supply_wei(block))
-            return hex(balance_wei("0x" + data[-40:], block))
+            to, data = params[0]["to"], params[0]["data"]
+            if to == holders.RETH:
+                block = int(params[1], 16)
+                if data == "0x18160ddd":
+                    return hex(supply_wei(block))
+                return hex(balance_wei("0x" + data[-40:], block))
+            if to == POOL and data == "0x95d89b41":  # symbol() -> "TPOOL"
+                return "0x" + f"{32:064x}{5:064x}" + b"TPOOL".ljust(32, b"\0").hex()
+            raise RuntimeError("{'code': 3, 'message': 'execution reverted'}")
         if method == "eth_getCode":
             return "0x6080" if params[0] == POOL else "0x"
         raise ValueError(method)
@@ -141,6 +146,7 @@ pd.DataFrame({"date": dates, "unix": 0, "block": week_blocks}).to_csv("reth_stud
 holders.KEYS = {k: "" for k in holders.KEYS}
 holders.build_sources = lambda: SOURCES
 holders.blockscout_info = lambda a: {}
+holders.sourcify_name = lambda a: ""
 holders.pause = lambda s: None
 holders.CACHE_DIR = os.path.join(work, "cache")
 holders.SATURN1 = str(dates[6].date())
@@ -185,7 +191,7 @@ assert abs(top.loc[WHALE, "net"] + 6_000) < 1e-6
 assert abs(top.loc[WHALE, "balance_start"] - 10_000) < 1e-6 and abs(top.loc[WHALE, "balance_end"] - 4_000) < 1e-6
 assert top["balance_check"].all()
 assert abs(top.loc[POOL, "net"] + 2_000) < 1e-6 and bool(top.loc[POOL, "is_contract"])
-assert top.loc[POOL, "label"] == "Test pool"
+assert top.loc[POOL, "label"] == "Test pool" and top.loc[POOL, "profile"] == "token TPOOL"
 conc = pd.read_csv("reth_study/holders_concentration.csv")
 assert conc.loc[0, "top1_share"] > 0.5, conc.loc[0, "top1_share"]
 assert abs(conc.loc[0, "supply_change_reth"] - (supply[-1] - supply[0])) < 1e-6

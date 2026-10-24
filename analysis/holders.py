@@ -504,14 +504,92 @@ def etherscan_name(addr):
         return ""
 
 
+def sourcify_name(addr):
+    """Contract name from Sourcify (verified contracts), following a proxy to its implementation."""
+    def get(a):
+        r = requests.get(f"https://sourcify.dev/server/v2/contract/1/{a}", timeout=20, headers=UA,
+                         params={"fields": "compilation,proxyResolution"})
+        return r.json() if r.status_code == 200 else {}
+    try:
+        js = get(addr)
+        name = (js.get("compilation") or {}).get("name") or ""
+        pr = js.get("proxyResolution") or {}
+        if pr.get("isProxy") and pr.get("implementations"):
+            impl = (get(pr["implementations"][0]["address"]).get("compilation") or {}).get("name") or ""
+            if impl and impl != name:
+                name = f"{name} -> {impl}" if name else impl
+        return name
+    except Exception:
+        return ""
+
+
+ENS_REGISTRY = "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
+
+
+def view(rpcs, to, data):
+    """eth_call at the latest block; None when the function does not exist or returns nothing."""
+    for src in rpcs[:3]:
+        try:
+            res = src.call("eth_call", [{"to": to, "data": data}, "latest"], timeout=20)
+            return res if isinstance(res, str) and len(res) > 2 else None
+        except Exception as e:
+            if re.search(r"revert|execution|invalid opcode", str(e), re.I):
+                return None
+            continue
+    return None
+
+
+def decode_string(res):
+    """An ABI string, or a bytes32 for old tokens."""
+    try:
+        b = bytes.fromhex(res[2:])
+        if len(b) == 32:
+            return b.rstrip(b"\0").decode("utf-8", "ignore").strip()
+        off = int.from_bytes(b[:32], "big")
+        n = int.from_bytes(b[off:off + 32], "big")
+        return b[off + 32:off + 32 + n].decode("utf-8", "ignore").strip()
+    except Exception:
+        return ""
+
+
+def onchain_profile(addr, rpcs):
+    """What a contract is, from its own view functions: a token, a Safe multisig, an AMM pool."""
+    out = []
+    sym, name = view(rpcs, addr, "0x95d89b41"), view(rpcs, addr, "0x06fdde03")
+    s, n = decode_string(sym) if sym else "", decode_string(name) if name else ""
+    if s or n:
+        out.append((f"token {s}" if s else "token") + (f" ({n})" if n and n != s else ""))
+    owners, thr = view(rpcs, addr, "0xa0e67e2b"), view(rpcs, addr, "0xe75235b8")
+    if owners and thr:
+        b = bytes.fromhex(owners[2:])
+        out.append(f"Safe {int(thr, 16)}-of-{int.from_bytes(b[32:64], 'big') if len(b) >= 64 else '?'}")
+    t0, t1 = view(rpcs, addr, "0x0dfe1681"), view(rpcs, addr, "0xd21220a7")
+    if t0 and t1:
+        syms = [decode_string(view(rpcs, "0x" + t[-40:], "0x95d89b41") or "0x") or "?" for t in (t0, t1)]
+        out.append(f"pool {syms[0]}/{syms[1]}")
+    return "; ".join(out)
+
+
+def ens_reverse(addr, rpcs):
+    """The ENS name an address has set for itself, if any."""
+    try:
+        from eth_utils import keccak
+    except Exception:
+        return ""
+    node = b"\0" * 32
+    for label in reversed(f"{addr.lower()[2:]}.addr.reverse".split(".")):
+        node = keccak(node + keccak(label.encode()))
+    res = view(rpcs, ENS_REGISTRY, "0x0178b8bf" + node.hex())
+    if not res or int(res, 16) == 0:
+        return ""
+    name = view(rpcs, "0x" + res[-40:], "0x691f3431" + node.hex())
+    return decode_string(name) if name else ""
+
+
 def address_info(addr, rpcs, cache={}):
     if addr in cache:
         return cache[addr]
     info = blockscout_info(addr)
-    if not info.get("name"):
-        n = etherscan_name(addr)
-        if n:
-            info["name"] = n
     if info.get("is_contract") is None:
         for src in rpcs[:6]:
             try:
@@ -519,6 +597,12 @@ def address_info(addr, rpcs, cache={}):
                 break
             except Exception:
                 continue
+    if info.get("is_contract"):
+        if not info.get("name"):
+            info["name"] = sourcify_name(addr) or etherscan_name(addr)
+        info["profile"] = onchain_profile(addr, rpcs)
+    if not info.get("ens"):
+        info["ens"] = ens_reverse(addr, rpcs)
     cache[addr] = info
     return info
 
@@ -552,7 +636,7 @@ def enrich(df, labels, rpcs, archive, b_start, b_end):
     out["category"] = [labels.get(a, {}).get("category", "") for a in out.index]
     info = {a: address_info(a, rpcs) for a in out.index}
     out["is_contract"] = [info[a].get("is_contract") for a in out.index]
-    for col in ("name", "tags", "ens"):
+    for col in ("name", "profile", "tags", "ens"):
         out[col] = [info[a].get(col, "") for a in out.index]
     if archive:
         out["balance_start"] = [balance(archive, a, b_start) for a in out.index]
@@ -562,7 +646,7 @@ def enrich(df, labels, rpcs, archive, b_start, b_end):
 
 
 def display_name(row, addr):
-    for k in ("label", "tags", "name", "ens"):
+    for k in ("label", "tags", "profile", "name", "ens"):
         v = row.get(k, "")
         if isinstance(v, str) and v.strip():
             return v.split(";")[0].strip()[:40]
@@ -697,7 +781,7 @@ def main():
     fig.tight_layout()
     fig.savefig(os.path.join(OUT_DIR, "chart_top_leavers.png"), dpi=150)
 
-    show = [c for c in ("net", "share_of_total_decrease", "is_contract", "label", "name", "tags",
+    show = [c for c in ("net", "share_of_total_decrease", "is_contract", "label", "profile", "name", "tags",
                         "balance_start", "balance_end") if c in top]
     print(pd.DataFrame([conc, conc_s1]).T.to_string())
     print(top[show].head(15).round(3).to_string())
