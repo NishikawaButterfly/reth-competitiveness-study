@@ -14,7 +14,7 @@ cloudflare-eth.com,rpc,False,True,0,,,,False
 eth-mainnet.public.blastapi.io,rpc,False,True,0,,,,False
 ethereum-public.nodies.app,rpc,False,True,0,,,,False
 ethereum.public.blockpi.network/v1/rpc/public,rpc,False,True,0,,,,False
-eth-mainnet.g.alchemy.com/v2/demo,rpc,False,True,0,,,,False
+eth-mainnet.g.alchemy.com/v2/demo,rpc,False,False,0,,,RateLimited: HTTP 429,False
 rpc.eth.gateway.fm,rpc,False,False,0,,,"RuntimeError: HTTP 503: {""jsonrpc"":""2.0"",""result"":{""code"":503,""message"":""server unavailable""},""id"":1}",False
 eth.meowrpc.com,rpc,False,True,0,,,,False
 mainnet.gateway.tenderly.co,rpc,False,True,0,,,,False
@@ -52,11 +52,7 @@ mainnet-nethermind.blockscout.com,rpc,False,False,0,,,RuntimeError: HTTP 404: de
 nodes.mewapi.io/rpc/eth,rpc,False,True,0,,,,False
 main-rpc.linkpool.io,rpc,False,False,0,,,"ConnectionError: HTTPSConnectionPool(host='main-rpc.linkpool.io', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""HTTPSConnection(host='main-rpc.link",False
 eth-mainnet.rpcfast.com,rpc,False,True,0,,,,False
-rpc.chain49.com/ethereum,rpc,False,False,0,,,"RuntimeError: HTTP 404: <html>
-<head><title>404 Not Found</title></head>
-<body>
-<center><h1>404 Not Found</h1></center>
-<hr><center>nginx/1.",False
+rpc.chain49.com/ethereum,rpc,False,False,0,,,"ReadTimeout: HTTPSConnectionPool(host='rpc.chain49.com', port=443): Read timed out. (read timeout=15)",False
 services.tokenview.io/vipapi/nodeservice/eth,rpc,False,False,0,,,RateLimited: HTTP 429,False
 eth.blockrazor.xyz/fullprivacy,rpc,False,True,0,,,,False
 eth.blockrazor.xyz/maxbackrun,rpc,False,True,0,,,,False

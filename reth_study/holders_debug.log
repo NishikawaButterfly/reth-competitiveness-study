@@ -1,5 +1,5 @@
-2026-10-24 23:42:03 Window: blocks 18944482 to 26258774, 146 weeks; supply 562,349.8 -> 309,436.4 rETH
-2026-10-24 23:42:19 All weeks cached; 38 of 54 endpoints answered (used for balances and names)
-2026-10-24 23:42:20 Weeks from cache: 146; to fetch: 0 with 0 sources
-2026-10-24 23:42:20 Transfers in window: 708,235
-2026-10-24 23:42:22 Archive sources for balances: eth.drpc.org, rpc.mevblocker.io, eth-mainnet.public.blastapi.io
+2026-10-24 23:49:35 Window: blocks 18944482 to 26258774, 146 weeks; supply 562,349.8 -> 309,436.4 rETH
+2026-10-24 23:49:50 All weeks cached; 37 of 54 endpoints answered (used for balances and names)
+2026-10-24 23:49:52 Weeks from cache: 146; to fetch: 0 with 0 sources
+2026-10-24 23:49:52 Transfers in window: 708,235
+2026-10-24 23:49:53 Archive sources for balances: eth.drpc.org, public.1rpc.io/eth, rpc.mevblocker.io
