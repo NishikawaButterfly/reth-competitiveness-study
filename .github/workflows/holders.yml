@@ -53,7 +53,7 @@ jobs:
         if: always()
         run: |
           git config user.name "Nishikawa"
-          git config user.email "NishikawaButterfly@users.noreply.github.com"
+          git config user.email "130159335+NishikawaButterfly@users.noreply.github.com"
           mkdir -p "$RUNNER_TEMP/out"
           cp reth_study/holders_* reth_study/chart_top_leavers.png reth_study/chart_supply_change_by_holder.png \
              "$RUNNER_TEMP/out/" 2>/dev/null || true
