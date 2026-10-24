@@ -1,0 +1,10 @@
+web3>=6.15,<8
+requests
+numpy
+pandas
+matplotlib
+statsmodels
+nbformat
+nbclient
+nbconvert
+ipykernel
