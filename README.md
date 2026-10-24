@@ -26,7 +26,10 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 | `reth_study/demand_response.csv` | Regression results for lags 1 to 4 and a robustness check |
 | `reth_study/fee_scenarios.csv` | Scenario projections |
 | `reth_study/quarterly.csv` | Quarterly yield gap, the part the fee explains, and flows |
-| `reth_study/holders_*.csv` | Who is leaving: net rETH change by address since January 2024 and since Saturn 1, concentration, top leavers and gainers with their balances at both ends, worst weeks ([`analysis/holders.py`](analysis/holders.py)) |
+| `reth_study/holders_by_category.csv` | Who is leaving: the net rETH change split by holder type (restaking, lending and CDPs, DEX liquidity, L2 bridges, funds and DAO treasuries, large wallets, everyone else). Each column adds up exactly to the supply change |
+| `reth_study/holders_by_entity.csv` | Net change per identified protocol or treasury, since January 2024 and since Saturn 1 |
+| `reth_study/holders_*.csv` (other) | Top leavers and gainers with balances at both ends, concentration, where the top leavers sent their rETH, worst weeks, unlabelled large addresses, and how each week was fetched and checked ([`analysis/holders.py`](analysis/holders.py)) |
+| `analysis/labels.csv` | Who each identified address is, and the evidence for it |
 | `reth_study/chart_*.png` | Charts |
 | `results/reth_study_v2_executed.ipynb` | The notebook as last executed, with outputs |
 

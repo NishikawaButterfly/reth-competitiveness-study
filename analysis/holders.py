@@ -903,21 +903,43 @@ def main():
     fig.tight_layout()
     fig.savefig(os.path.join(OUT_DIR, "chart_top_leavers.png"), dpi=150)
 
-    # 8. Chart: the supply change split by holder type (waterfall)
+    # 8. Chart: the supply change split by holder type (waterfall, protocols first, then holders)
     steps = dec.drop(index="Total (= supply change)")["net_since_2024"]
-    fig, ax = plt.subplots(figsize=(10, 5.5))
-    cum = 0.0
-    for i, (c, v) in enumerate(steps.items()):
-        ax.bar(i, v / 1e3, bottom=cum / 1e3, color="#c44e52" if v < 0 else "#55a868", width=0.7)
-        ax.text(i, (cum + v) / 1e3, f"{v / 1e3:+,.1f}k", ha="center", va="top" if v < 0 else "bottom", fontsize=8)
+    prot = steps[[c for c in CATEGORY_ORDER[:5] if c in steps.index]].sort_values()
+    hold = steps[[c for c in steps.index if c not in prot.index]]
+    rename = {"Large wallets": f"Large wallets ({BIG:,.0f}+ rETH each)",
+              "Unidentified contracts": f"Unidentified contracts ({BIG:,.0f}+)",
+              "Other addresses": f"Addresses under {BIG:,.0f} rETH"}
+    bars, cum = [], 0.0
+    for c, v in prot.items():
+        bars.append((c, cum + v, cum, v, "step"))
         cum += v
-    ax.bar(len(steps), cum / 1e3, color="#4c72b0", width=0.7)
-    ax.text(len(steps), cum / 1e3, f"{cum / 1e3:+,.1f}k", ha="center", va="top", fontsize=8)
-    ax.set_xticks(range(len(steps) + 1), [*steps.index, "rETH supply change"], rotation=25, ha="right")
-    ax.axhline(0, color="black", lw=0.8)
-    ax.set_ylabel("rETH (thousand)")
-    ax.set_title(f"Who the rETH supply change came from, {w_all}")
-    ax.grid(alpha=0.3, axis="y")
+    bars.append(("Protocols, subtotal", cum, 0.0, cum, "sum"))
+    for c, v in hold.items():
+        bars.append((rename.get(c, c), min(cum, cum + v), max(cum, cum + v), v, "step"))
+        cum += v
+    bars.append(("rETH supply change", cum, 0.0, cum, "sum"))
+    fig, ax = plt.subplots(figsize=(10, 5.6))
+    for i, (lab, a, b, v, kind) in enumerate(bars):
+        color = "#9e9e9e" if kind == "sum" else ("#c44e52" if v < 0 else "#55a868")
+        ax.barh(i, (b - a) / 1e3, left=a / 1e3, color=color, alpha=0.85 if kind == "sum" else 0.7, height=0.62)
+        ax.text(a / 1e3 - 2, i, f"{v:+,.0f}".replace("-", "\u2212"), va="center", ha="right", fontsize=9,
+                fontweight="bold" if kind == "sum" else "normal")
+    ax.set_yticks(range(len(bars)), [b[0] for b in bars])
+    for t, b in zip(ax.get_yticklabels(), bars):
+        t.set_fontweight("bold" if b[4] == "sum" else "normal")
+    ax.invert_yaxis()
+    ax.axvline(0, color="black", lw=0.8)
+    ax.set_xlim(cum / 1e3 * 1.22, 4)
+    ax.set_xlabel("Net change in rETH held (thousand)")
+    ax.grid(alpha=0.25, axis="x")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    share = prot.sum() / cum if cum else np.nan
+    fig.suptitle(f"Protocol positions explain {share:.0%} of the rETH drop since {panel['date'].iloc[0]:%B %Y}",
+                 x=0.01, ha="left", fontsize=13, fontweight="bold")
+    ax.set_title(f"Net change by holder type, {w_all}. Red: net decrease. Grey: subtotal and total.",
+                 loc="left", fontsize=9, color="#555555")
     fig.tight_layout()
     fig.savefig(os.path.join(OUT_DIR, "chart_supply_change_by_holder.png"), dpi=150)
     print(dec.round(1).to_string())
