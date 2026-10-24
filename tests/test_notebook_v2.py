@@ -33,6 +33,9 @@ flow = np.full(n, -0.30)
 for k in range(5, n):
     flow[k] = -0.30 + BETA_TRUE * gap4[k - 1] + rng.normal(0, 0.05)
 supply = 470_000 * np.cumprod(np.r_[1.0, 1 + flow[1:] / 100])
+# stETH pooled ETH: rewards plus independent net flows (market control, unrelated to rETH here)
+steth_flow = rng.normal(0.05, 0.3, n)
+pooled = 9_500_000 * np.cumprod(np.r_[1.0, (s_rate[1:] / s_rate[:-1]) * (1 + steth_flow[1:] / 100)])
 GRID_TS = np.array([int(t.timestamp()) for t in grid])
 
 T0 = int(GRID_TS[0]); B0 = 18_700_000
@@ -74,6 +77,7 @@ class _Functions:
     def totalSupply(self): return _Call(lambda b: int(interp(ts_of(b), supply) * 1e18))
     def getExchangeRate(self): return _Call(lambda b: int(interp(ts_of(b), r_rate) * 1e18))
     def getPooledEthByShares(self, sh): return _Call(lambda b: int(interp(ts_of(b), s_rate) * sh))
+    def getTotalPooledEther(self): return _Call(lambda b: int(interp(ts_of(b), pooled) * 1e18))
 class _Contract:
     def __init__(self): self.functions = _Functions()
 class _Eth:
@@ -115,6 +119,12 @@ print(resp.round(4).to_string())
 b = resp.iloc[0]
 assert 0.007 < b["beta_gap"] < 0.013, b["beta_gap"]
 assert b["ci95_low"] < BETA_TRUE < b["ci95_high"], (b["ci95_low"], b["ci95_high"])
+mc = resp.set_index("model").loc["lag 1, with stETH flows as market control"]
+assert mc["ci95_low"] < BETA_TRUE < mc["ci95_high"], (mc["ci95_low"], mc["ci95_high"])
+assert resp["p_holm"].notna().sum() == 4
+panel_t = ns["panel"]
+true_flow = pd.Series(steth_flow[5:]).reset_index(drop=True)
+assert abs(panel_t["steth_flow_pct"].dropna().mean() - 0.05) < 0.1, panel_t["steth_flow_pct"].mean()
 
 scen = ns["scen"]
 print(scen[scen.beta_case == "mid"][["scenario", "holder_apr_gain_bps", "weekly_flow_pct",
@@ -126,6 +136,7 @@ assert mid.loc["12% (5% + 7%)", "holder_apr_gain_bps"] > 0
 assert mid.loc["12% (5% + 7%)", "operator_income_vs_today"] > 0      # same operator share, bigger rETH
 print("gross APR", round(ns["gross_apr"], 5), "effective fee", round(ns["effective_reth_fee"], 4))
 assert 0.031 < ns["gross_apr"] < 0.035
-for f in ["weekly_panel.csv", "demand_response.csv", "fee_scenarios.csv", "chart_scenarios.png"]:
+for f in ["weekly_panel.csv", "demand_response.csv", "fee_scenarios.csv", "chart_scenarios.png",
+          "quarterly.csv", "chart_quarterly_gap.png"]:
     assert os.path.exists(os.path.join("reth_study", f)), f
 print("ALL V2 TESTS PASSED")

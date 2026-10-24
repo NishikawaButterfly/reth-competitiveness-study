@@ -15,7 +15,7 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 3. **Market prices** of rETH and ETH (DefiLlama coins API).
 4. **Weekly panel**: net APR of rETH and stETH, yield gap, net rETH flows, market premium or discount.
 5. **Self-check** against published rETH supply figures. The run stops if they disagree by more than 1%.
-6. **Demand response**: weekly flows regressed on the lagged yield gap, the premium, the ETH price change and a Saturn 1 marker, with autocorrelation-robust errors.
+6. **Demand response**: weekly flows regressed on the lagged yield gap, the premium, the ETH price change and a Saturn 1 marker, with autocorrelation-robust errors. A second version adds stETH's net flows as a market-wide control, and p-values across the four lags are Holm-adjusted.
 7. **Fee scenarios**: a 12-month projection for 14%, 12% and 10% fees, with the 95% range of the demand response.
 
 ## Outputs
@@ -25,6 +25,7 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 | `reth_study/weekly_panel.csv` | The weekly dataset behind every number |
 | `reth_study/demand_response.csv` | Regression results for lags 1 to 4 and a robustness check |
 | `reth_study/fee_scenarios.csv` | Scenario projections |
+| `reth_study/quarterly.csv` | Quarterly yield gap, the part the fee explains, and flows |
 | `reth_study/chart_*.png` | Charts |
 | `results/reth_study_v2_executed.ipynb` | The notebook as last executed, with outputs |
 
