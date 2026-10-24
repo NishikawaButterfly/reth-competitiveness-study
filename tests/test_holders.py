@@ -69,7 +69,7 @@ panel = pd.DataFrame({"date": dates, "block": week_blocks, "reth_supply": mint_b
 panel["net_flow_eth"] = panel["reth_supply"].diff()
 panel.to_csv("reth_study/weekly_panel.csv", index=False)
 
-holders.connect = lambda start: FakeW3()
+holders.connect_all = lambda start: [("fake", FakeW3())]
 holders.LABELS_FILE = os.path.join(work, "labels.csv")
 pd.DataFrame({"address": [POOL], "label": ["Test pool"]}).to_csv(holders.LABELS_FILE, index=False)
 
@@ -93,3 +93,15 @@ holders.main()
 assert FakeEth.calls == 0, FakeEth.calls
 print(f"log requests on first run: {first_calls}; on rerun: 0")
 print("ALL HOLDERS TESTS PASSED")
+
+# endpoint rotation: the first endpoint always fails, the second works
+class BadEth:
+    def get_logs(self, p):
+        raise ConnectionError("simulated outage")
+class BadW3:
+    eth = BadEth()
+holders.time.sleep = lambda *_: None
+tr = holders.fetch_transfers([("bad", BadW3()), ("good", FakeW3())], week_blocks[0] + 1, week_blocks[-1],
+                             os.path.join(work, "rotation_cache.csv"))
+assert len(tr) == len(logs), (len(tr), len(logs))
+print("endpoint rotation OK")
