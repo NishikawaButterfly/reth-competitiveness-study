@@ -1,0 +1,61 @@
+source,type,keyed,chain_ok,max_range,probe_logs,seconds,error,usable
+eth.blockscout.com,api,False,False,200,10.0,0.2,,True
+eth.drpc.org,rpc,False,True,0,,,"RuntimeError: HTTP 400: {""id"":2,""jsonrpc"":""2.0"",""error"":{""message"":""ranges over 10000 blocks are not supported on free plan"",""code"":35}}",False
+ethereum-rpc.publicnode.com,rpc,False,True,0,,,"RuntimeError: HTTP 403: {""jsonrpc"":""2.0"",""error"":{""code"":-32602,""message"":""Archive requests require a personal token. Get one at: https://www.al",False
+eth.llamarpc.com,rpc,False,False,0,,,"RuntimeError: HTTP 403: <!DOCTYPE html><html lang=""en-US""><head><title>Just a moment...</title><meta http-equiv=""Content-Type"" content=""text/htm",False
+public.1rpc.io/eth,rpc,False,True,0,,,"RuntimeError: {'code': -32602, 'message': 'eth_getLogs is limited to 0 - 50 blocks range'}",False
+rpc.mevblocker.io,rpc,False,True,50000,10.0,0.18,,True
+rpc.flashbots.net,rpc,False,True,200,0.0,0.03,"RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'} probe returned a different count than the consensus (10)",False
+eth.rpc.blxrbdn.com,rpc,False,True,0,,,"RuntimeError: {'code': -32000, 'message': 'method not available'}",False
+virginia.rpc.blxrbdn.com,rpc,False,True,0,,,"RuntimeError: {'code': -32000, 'message': 'method not available'}",False
+uk.rpc.blxrbdn.com,rpc,False,True,0,,,"RuntimeError: {'code': -32000, 'message': 'method not available'}",False
+singapore.rpc.blxrbdn.com,rpc,False,True,0,,,"RuntimeError: {'code': -32000, 'message': 'method not available'}",False
+cloudflare-eth.com,rpc,False,True,0,,,"RuntimeError: {'code': -32603, 'message': 'Internal error'}",False
+eth-mainnet.public.blastapi.io,rpc,False,True,0,,,"RuntimeError: HTTP 400: {""jsonrpc"":""2.0"",""id"":2,""error"":{""code"":-32600,""message"":""You can make eth_getLogs requests with up to a 10 block range.",False
+ethereum-public.nodies.app,rpc,False,True,0,,,"RuntimeError: {'code': -32001, 'message': 'Block range too large: maximum allowed is 50 blocks on your current plan. Upgrade your subscription at https://nodies.app/pricing f",False
+ethereum.public.blockpi.network/v1/rpc/public,rpc,False,True,2000,10.0,0.28,"RuntimeError: {'code': -32602, 'message': 'eth_getLogs is limited to 5000 block range. Please check the parameter requirements at  https://docs.blockpi.io/documentations/api-",True
+eth-mainnet.g.alchemy.com/v2/demo,rpc,False,False,0,,,RateLimited: HTTP 429,False
+rpc.eth.gateway.fm,rpc,False,False,0,,,"RuntimeError: HTTP 503: {""jsonrpc"":""2.0"",""result"":{""code"":503,""message"":""server unavailable""},""id"":1}",False
+eth.meowrpc.com,rpc,False,True,0,,,RateLimited: HTTP 429,False
+mainnet.gateway.tenderly.co,rpc,False,True,10000,10.0,0.12,RateLimited: HTTP 429,True
+gateway.tenderly.co/public/mainnet,rpc,False,True,2000,10.0,0.26,RateLimited: HTTP 429,True
+api.zan.top/eth-mainnet,rpc,False,True,0,,,"RuntimeError: cu limit exceeded; Method ""eth_getLogs"" is not available for unregistered accounts. Please visit https://zan.top/ and register to unlock more.",False
+eth.merkle.io,rpc,False,False,0,,,RateLimited: HTTP 429,False
+rpc.polysplit.cloud/v1/chain/1,rpc,False,False,0,,,"ConnectTimeout: HTTPSConnectionPool(host='ww38.polysplit.cloud', port=443): Max retries exceeded with url: /v1/chain/1 (Caused by ConnectTimeoutError(<HTTPSConnection(host='ww3",False
+ethereum-mainnet.gateway.tatum.io,rpc,False,True,0,,,"RuntimeError: {'code': -16412, 'message': 'Requested range is over limit of 100'}",False
+public-eth.nownodes.io,rpc,False,True,50000,10.0,0.18,,True
+eth.blockrazor.xyz,rpc,False,True,0,,,"RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}",False
+0xrpc.io/eth,rpc,False,True,10000,10.0,0.15,"RuntimeError: {'code': -32601, 'message': 'Request contains invalid block params'}",True
+eth.api.onfinality.io/public,rpc,False,False,0,,,RateLimited: HTTP 429,False
+ethereum-json-rpc.stakely.io,rpc,False,True,200,10.0,0.23,"RuntimeError: {'code': -32000, 'message': 'method not available'}",True
+eth.api.pocket.network,rpc,False,True,50000,10.0,0.18,,True
+rpc.fullsend.to,rpc,False,True,0,,,"RuntimeError: {'message': 'block not found for eth_getLogs, requested toBlock 18944681 is not yet available on the node (latestBlock: 26265741, finalizedBlock: 26265657)', 'c",False
+mainnet.rpc.sentio.xyz,rpc,False,True,200,10.0,0.14,RateLimited: HTTP 429,True
+rpc.swiftnodes.io/rpc/eth,rpc,False,True,0,,,"RuntimeError: HTTP 403: {""jsonrpc"":""2.0"",""id"":2,""error"":{""code"":-33000,""message"":""The free plan allows eth_getLogs over at most 100 blocks per r",False
+rpc-eth.blockmachine.io,rpc,False,True,10000,10.0,0.15,"RuntimeError: {'code': -32602, 'data': {'max_blocks': 10000, 'max_step': 9999, 'requested_blocks': 50000}, 'message': 'block range exceeds maximum allowed (max=10000, request",True
+mainnet.eth.cloud.ava.do,rpc,False,False,0,,,"ConnectTimeout: HTTPSConnectionPool(host='mainnet.eth.cloud.ava.do', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='mainnet.e",False
+ethereumnodelight.app.runonflux.io,rpc,False,False,0,,,"RuntimeError: HTTP 503: <html>
+    <head>
+        <title>Error 503 FDM-USA-1-1</title>
+        <link rel=""shortcut icon"" type=""image/x-icon"" hre",False
+xrpc.cl/eth,rpc,False,True,200,10.0,2.26,"RuntimeError: HTTP 503: {""jsonrpc"":""2.0"",""error"":{""code"":-32000,""message"":""XRPC Cluster: Backend eth node currently syncing and fallbacks busy""}",True
+rpc.hostdefi.com/api/rpc/ethereum,rpc,False,False,0,,,"RuntimeError: HTTP 403: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class=""no-js ie6 oldie"" lang=""en-US""> <![endif]-->
+<!--[if IE 7]>    <html class",False
+lb.routeme.sh/rpc/evm/1,rpc,False,False,0,,,RateLimited: HTTP 429,False
+rpc.nodeflare.app/eth/public,rpc,False,True,0,,,RateLimited: HTTP 429,False
+one.valve.city/rpc/vk_demo/evm/1,rpc,False,True,10000,10.0,0.23,"RuntimeError: {'code': -32602, 'message': 'query exceeds max block range 10000 for this key; use a paid key for wider ranges'}",True
+eth-mainnet.nodereal.io/v1/...,rpc,False,True,50000,10.0,0.07,,True
+yolo-intensive-paper.discover.quiknode.pro/...,rpc,False,False,0,,,"ConnectionError: HTTPSConnectionPool(host='yolo-intensive-paper.discover.quiknode.pro', port=443): Max retries exceeded with url: /45cad3065a05ccb632980a7ee67dd4cbb470ffbd/ (Cau",False
+api.mycryptoapi.com/eth,rpc,False,False,0,,,"RuntimeError: HTTP 403: {""message"":""Forbidden""}",False
+mainnet-nethermind.blockscout.com,rpc,False,False,0,,,RuntimeError: HTTP 404: default backend - 404,False
+nodes.mewapi.io/rpc/eth,rpc,False,True,10000,10.0,0.09,"RuntimeError: HTTP 413: {""jsonrpc"":""2.0"",""id"":5,""error"":{""code"":-32614,""message"":""eth_getLogs is limited to a 10,000 range""}}",True
+main-rpc.linkpool.io,rpc,False,False,0,,,"ConnectionError: HTTPSConnectionPool(host='main-rpc.linkpool.io', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""HTTPSConnection(host='main-rpc.link",False
+eth-mainnet.rpcfast.com,rpc,False,True,0,,,"RuntimeError: {'code': 4444, 'message': 'pruned history unavailable: requested 18944482, earliest available 26000000'}",False
+rpc.chain49.com/ethereum,rpc,False,False,0,,,"ReadTimeout: HTTPSConnectionPool(host='rpc.chain49.com', port=443): Read timed out. (read timeout=15)",False
+services.tokenview.io/vipapi/nodeservice/eth,rpc,False,False,0,,,RateLimited: HTTP 429,False
+eth.blockrazor.xyz/fullprivacy,rpc,False,True,0,,,"RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}",False
+eth.blockrazor.xyz/maxbackrun,rpc,False,True,0,,,"RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}",False
+rpc.owlracle.info/eth/...,rpc,False,False,0,,,"RuntimeError: HTTP 401: {""error"":true,""code"":401,""message"":""Origin mismatch""}",False
+api-ethereum-mainnet-reth.n.dwellir.com/...,rpc,False,True,0,,,"RuntimeError: HTTP 403: Your current plan does not support the eth_getLogs method. Please upgrade to a paid plan at dashboard.dwellir.com.
+",False

@@ -1,7 +1,67 @@
-2026-10-24 22:57:42 Skipping https://eth.drpc.org: HTTPError: 400 Client Error: Bad Request for url: https://eth.drpc.org/
-2026-10-24 22:57:44 Skipping https://ethereum-rpc.publicnode.com: HTTPError: 403 Client Error: Forbidden for url: https://ethereum-rpc.publicnode.com/
-2026-10-24 22:57:46 Skipping https://eth.llamarpc.com: HTTPError: 403 Client Error: Forbidden for url: https://eth.llamarpc.com/
-2026-10-24 22:57:47 Skipping https://1rpc.io/eth: Web3RPCError: {'code': -32602, 'message': 'eth_getLogs is limited to 0 - 50 blocks range'}
-2026-10-24 22:57:47 Skipping https://rpc.payload.de: ConnectionError: HTTPSConnectionPool(host='rpc.payload.de', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='rpc.payload.de', port=443): Failed to resolve 'rpc.payload.
-2026-10-24 22:57:49 Skipping https://eth.merkle.io: HTTPError: 429 Client Error: Too Many Requests for url: https://eth.merkle.io/
-2026-10-24 22:57:49 FAILED: RuntimeError: No endpoint served logs. Add the ALCHEMY_KEY secret and rerun.
+2026-10-24 23:16:42 Window: blocks 18944482 to 26258774, 146 weeks; supply 562,349.8 -> 309,436.4 rETH
+2026-10-24 23:16:58 Sources: 54 tried, 36 answered, 12 serve logs: eth-mainnet.nodereal.io/v1/... (50,000), rpc.mevblocker.io (50,000), public-eth.nownodes.io (50,000), eth.api.pocket.network (50,000), eth.blockscout.com (50,000), nodes.mewapi.io/rpc/eth (10,000), mainnet.gateway.tenderly.co (10,000), 0xrpc.io/eth (10,000), rpc-eth.blockmachine.io (10,000), one.valve.city/rpc/vk_demo/evm/1 (10,000), gateway.tenderly.co/public/mainnet (2,000), ethereum.public.blockpi.network/v1/rpc/public (2,000)
+2026-10-24 23:16:58   not used: eth.drpc.org: RuntimeError: HTTP 400: {"id":2,"jsonrpc":"2.0","error":{"message":"ranges over 10000 blocks are not supported on free plan","code":35}}
+2026-10-24 23:16:58   not used: ethereum-rpc.publicnode.com: RuntimeError: HTTP 403: {"jsonrpc":"2.0","error":{"code":-32602,"message":"Archive requests require a personal token. Get one at: https://ww
+2026-10-24 23:16:58   not used: eth.llamarpc.com: RuntimeError: HTTP 403: <!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text
+2026-10-24 23:16:58   not used: public.1rpc.io/eth: RuntimeError: {'code': -32602, 'message': 'eth_getLogs is limited to 0 - 50 blocks range'}
+2026-10-24 23:16:58   not used: rpc.flashbots.net: RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'} probe returned a different count than the consensus (10)
+2026-10-24 23:16:58   not used: eth.rpc.blxrbdn.com: RuntimeError: {'code': -32000, 'message': 'method not available'}
+2026-10-24 23:16:58   not used: virginia.rpc.blxrbdn.com: RuntimeError: {'code': -32000, 'message': 'method not available'}
+2026-10-24 23:16:58   not used: uk.rpc.blxrbdn.com: RuntimeError: {'code': -32000, 'message': 'method not available'}
+2026-10-24 23:16:58   not used: singapore.rpc.blxrbdn.com: RuntimeError: {'code': -32000, 'message': 'method not available'}
+2026-10-24 23:16:58   not used: cloudflare-eth.com: RuntimeError: {'code': -32603, 'message': 'Internal error'}
+2026-10-24 23:16:58   not used: eth-mainnet.public.blastapi.io: RuntimeError: HTTP 400: {"jsonrpc":"2.0","id":2,"error":{"code":-32600,"message":"You can make eth_getLogs requests with up to a 10 block ra
+2026-10-24 23:16:58   not used: ethereum-public.nodies.app: RuntimeError: {'code': -32001, 'message': 'Block range too large: maximum allowed is 50 blocks on your current plan. Upgrade your subscripti
+2026-10-24 23:16:58   not used: eth-mainnet.g.alchemy.com/v2/demo: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: rpc.eth.gateway.fm: RuntimeError: HTTP 503: {"jsonrpc":"2.0","result":{"code":503,"message":"server unavailable"},"id":1}
+2026-10-24 23:16:58   not used: eth.meowrpc.com: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: api.zan.top/eth-mainnet: RuntimeError: cu limit exceeded; Method "eth_getLogs" is not available for unregistered accounts. Please visit https://zan.top/ and register
+2026-10-24 23:16:58   not used: eth.merkle.io: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: rpc.polysplit.cloud/v1/chain/1: ConnectTimeout: HTTPSConnectionPool(host='ww38.polysplit.cloud', port=443): Max retries exceeded with url: /v1/chain/1 (Caused by ConnectTim
+2026-10-24 23:16:58   not used: ethereum-mainnet.gateway.tatum.io: RuntimeError: {'code': -16412, 'message': 'Requested range is over limit of 100'}
+2026-10-24 23:16:58   not used: eth.blockrazor.xyz: RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}
+2026-10-24 23:16:58   not used: eth.api.onfinality.io/public: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: rpc.fullsend.to: RuntimeError: {'message': 'block not found for eth_getLogs, requested toBlock 18944681 is not yet available on the node (latestBlock: 262657
+2026-10-24 23:16:58   not used: rpc.swiftnodes.io/rpc/eth: RuntimeError: HTTP 403: {"jsonrpc":"2.0","id":2,"error":{"code":-33000,"message":"The free plan allows eth_getLogs over at most 100 blocks p
+2026-10-24 23:16:58   not used: mainnet.eth.cloud.ava.do: ConnectTimeout: HTTPSConnectionPool(host='mainnet.eth.cloud.ava.do', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutEr
+2026-10-24 23:16:58   not used: ethereumnodelight.app.runonflux.io: RuntimeError: HTTP 503: <html>
+    <head>
+        <title>Error 503 FDM-USA-1-1</title>
+        <link rel="shortcut icon" type="image/x-icon"
+2026-10-24 23:16:58   not used: rpc.hostdefi.com/api/rpc/ethereum: RuntimeError: HTTP 403: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html c
+2026-10-24 23:16:58   not used: lb.routeme.sh/rpc/evm/1: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: rpc.nodeflare.app/eth/public: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: yolo-intensive-paper.discover.quiknode.pro/...: ConnectionError: HTTPSConnectionPool(host='yolo-intensive-paper.discover.quiknode.pro', port=443): Max retries exceeded with url: /45cad3065
+2026-10-24 23:16:58   not used: api.mycryptoapi.com/eth: RuntimeError: HTTP 403: {"message":"Forbidden"}
+2026-10-24 23:16:58   not used: mainnet-nethermind.blockscout.com: RuntimeError: HTTP 404: default backend - 404
+2026-10-24 23:16:58   not used: main-rpc.linkpool.io: ConnectionError: HTTPSConnectionPool(host='main-rpc.linkpool.io', port=443): Max retries exceeded with url: / (Caused by NameResolutionError
+2026-10-24 23:16:58   not used: eth-mainnet.rpcfast.com: RuntimeError: {'code': 4444, 'message': 'pruned history unavailable: requested 18944482, earliest available 26000000'}
+2026-10-24 23:16:58   not used: rpc.chain49.com/ethereum: ReadTimeout: HTTPSConnectionPool(host='rpc.chain49.com', port=443): Read timed out. (read timeout=15)
+2026-10-24 23:16:58   not used: services.tokenview.io/vipapi/nodeservice/eth: RateLimited: HTTP 429
+2026-10-24 23:16:58   not used: eth.blockrazor.xyz/fullprivacy: RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}
+2026-10-24 23:16:58   not used: eth.blockrazor.xyz/maxbackrun: RuntimeError: {'code': 4444, 'message': 'pruned history unavailable'}
+2026-10-24 23:16:58   not used: rpc.owlracle.info/eth/...: RuntimeError: HTTP 401: {"error":true,"code":401,"message":"Origin mismatch"}
+2026-10-24 23:16:58   not used: api-ethereum-mainnet-reth.n.dwellir.com/...: RuntimeError: HTTP 403: Your current plan does not support the eth_getLogs method. Please upgrade to a paid plan at dashboard.dwellir.com.
+
+2026-10-24 23:16:58 Weeks from cache: 0; to fetch: 146 with 12 sources
+2026-10-24 23:17:02   10/146 weeks fetched (last: mainnet.gateway.tenderly.co, 4,087 transfers, 2s)
+2026-10-24 23:17:04   20/146 weeks fetched (last: one.valve.city/rpc/vk_demo/evm/1, 2,331 transfers, 6s)
+2026-10-24 23:17:07   30/146 weeks fetched (last: rpc.mevblocker.io, 2,950 transfers, 1s)
+2026-10-24 23:17:10   40/146 weeks fetched (last: rpc.mevblocker.io, 3,778 transfers, 1s)
+2026-10-24 23:17:12   50/146 weeks fetched (last: eth-mainnet.nodereal.io/v1/..., 2,038 transfers, 2s)
+2026-10-24 23:17:16   60/146 weeks fetched (last: mainnet.gateway.tenderly.co, 7,029 transfers, 2s)
+2026-10-24 23:17:19   70/146 weeks fetched (last: rpc.mevblocker.io, 1,890 transfers, 2s)
+2026-10-24 23:17:22   80/146 weeks fetched (last: mainnet.gateway.tenderly.co, 9,070 transfers, 2s)
+2026-10-24 23:17:27   90/146 weeks fetched (last: mainnet.gateway.tenderly.co, 7,899 transfers, 1s)
+2026-10-24 23:17:32   100/146 weeks fetched (last: mainnet.gateway.tenderly.co, 3,105 transfers, 1s)
+2026-10-24 23:17:37   110/146 weeks fetched (last: gateway.tenderly.co/public/mainnet, 2,945 transfers, 8s)
+2026-10-24 23:17:41   120/146 weeks fetched (last: public-eth.nownodes.io, 1,692 transfers, 5s)
+2026-10-24 23:17:45   130/146 weeks fetched (last: rpc.mevblocker.io, 7,910 transfers, 1s)
+2026-10-24 23:17:52   140/146 weeks fetched (last: public-eth.nownodes.io, 2,842 transfers, 6s)
+2026-10-24 23:21:11 eth.blockscout.com: week 5 (blocks 19144140-19194001): RateLimited: HTTP 429
+2026-10-24 23:21:29 nodes.mewapi.io/rpc/eth: week 100 (blocks 23900604-23950140): RateLimited: HTTP 429
+2026-10-24 23:21:31   146/146 weeks fetched (last: mainnet.gateway.tenderly.co, 11,033 transfers, 1s)
+2026-10-24 23:21:31 Transfers in window: 708,235
+2026-10-24 23:21:33 Archive sources for balances: rpc.mevblocker.io, mainnet.gateway.tenderly.co, gateway.tenderly.co/public/mainnet
