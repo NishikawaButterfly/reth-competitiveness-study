@@ -1,0 +1,7 @@
+2026-10-24 22:57:42 Skipping https://eth.drpc.org: HTTPError: 400 Client Error: Bad Request for url: https://eth.drpc.org/
+2026-10-24 22:57:44 Skipping https://ethereum-rpc.publicnode.com: HTTPError: 403 Client Error: Forbidden for url: https://ethereum-rpc.publicnode.com/
+2026-10-24 22:57:46 Skipping https://eth.llamarpc.com: HTTPError: 403 Client Error: Forbidden for url: https://eth.llamarpc.com/
+2026-10-24 22:57:47 Skipping https://1rpc.io/eth: Web3RPCError: {'code': -32602, 'message': 'eth_getLogs is limited to 0 - 50 blocks range'}
+2026-10-24 22:57:47 Skipping https://rpc.payload.de: ConnectionError: HTTPSConnectionPool(host='rpc.payload.de', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='rpc.payload.de', port=443): Failed to resolve 'rpc.payload.
+2026-10-24 22:57:49 Skipping https://eth.merkle.io: HTTPError: 429 Client Error: Too Many Requests for url: https://eth.merkle.io/
+2026-10-24 22:57:49 FAILED: RuntimeError: No endpoint served logs. Add the ALCHEMY_KEY secret and rerun.
