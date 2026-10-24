@@ -1,0 +1,64 @@
+name: Who is leaving rETH
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "analysis/**"
+      - "tests/test_holders.py"
+      - ".github/workflows/holders.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "41 7 2 * *"   # 2nd of each month, 07:41 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: study
+  cancel-in-progress: false
+
+jobs:
+  holders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Offline test
+        run: python tests/test_holders.py
+      - name: Restore cached transfers
+        uses: actions/cache/restore@v4
+        with:
+          path: cache
+          key: reth-transfers-${{ github.run_id }}
+          restore-keys: reth-transfers-
+      - name: Who is leaving rETH
+        env:
+          ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          INFURA_KEY: ${{ secrets.INFURA_KEY }}
+          BLOCKSCOUT_KEY: ${{ secrets.BLOCKSCOUT_KEY }}
+        run: python analysis/holders.py
+      - name: Save cached transfers
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: cache
+          key: reth-transfers-${{ github.run_id }}
+      - name: Commit results
+        if: always()
+        run: |
+          git config user.name "Nishikawa"
+          git config user.email "NishikawaButterfly@users.noreply.github.com"
+          git add reth_study/holders_* reth_study/chart_top_leavers.png 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit"
+          else
+            git commit -m "Update holder analysis [skip ci]"
+            git pull --rebase
+            git push
+          fi

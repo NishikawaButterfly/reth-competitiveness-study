@@ -7,6 +7,9 @@ on:
       - "reth_study/**"
       - "results/**"
       - "README.md"
+      - "analysis/**"
+      - "tests/test_holders.py"
+      - ".github/workflows/holders.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 0"   # Sundays 06:17 UTC: add the new week
@@ -29,8 +32,6 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Offline test on a synthetic market
         run: python tests/test_notebook_v2.py
-      - name: Offline test of the holder analysis
-        run: python tests/test_holders.py
 
   run:
     needs: test
@@ -50,10 +51,6 @@ jobs:
           jupyter nbconvert --to notebook --execute reth_study_v2.ipynb \
             --output-dir results --output reth_study_v2_executed.ipynb \
             --ExecutePreprocessor.timeout=3600
-      - name: Who is leaving rETH (holder analysis)
-        env:
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        run: python analysis/holders.py
       - name: Commit data and results
         if: always()
         run: |
