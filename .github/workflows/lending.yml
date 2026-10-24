@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: study
+  group: lending
   cancel-in-progress: false
 
 jobs:
