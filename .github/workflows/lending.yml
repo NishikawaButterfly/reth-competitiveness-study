@@ -42,7 +42,7 @@ jobs:
           git config user.name "Nishikawa"
           git config user.email "130159335+NishikawaButterfly@users.noreply.github.com"
           mkdir -p "$RUNNER_TEMP/out"
-          cp reth_study/lending_* reth_study/chart_lending_spread.png "$RUNNER_TEMP/out/" 2>/dev/null || true
+          cp reth_study/lending_* reth_study/chart_lending_*.png "$RUNNER_TEMP/out/" 2>/dev/null || true
           for attempt in 1 2 3; do
             git fetch -q origin main && git reset -q --hard origin/main
             cp "$RUNNER_TEMP"/out/* reth_study/ 2>/dev/null || true

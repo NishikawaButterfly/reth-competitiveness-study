@@ -204,6 +204,32 @@ def chart(df, path):
     fig.savefig(path, dpi=150)
 
 
+def chart_index(df, summ, path):
+    """rETH against wstETH supplied on both markets, indexed to the first week."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    c = df[df["venue"] == "Aave v3 + Spark"].sort_values("date")
+    med = summ[summ["venue"] == "Aave v3 + Spark"].set_index("asset")["median_spread_bps"]
+    fig, ax = plt.subplots(figsize=(10, 5.2))
+    for a, label, color, lw in (("wsteth", "wstETH", "#9e9e9e", 2.0), ("reth", "rETH", "#2b6cb0", 2.4)):
+        idx = c[f"{a}_supplied"] / c[f"{a}_supplied"].iloc[0] * 100
+        ax.plot(c["date"], idx, color=color, lw=lw)
+        ax.text(c["date"].iloc[-1], idx.iloc[-1], f"  {label} {idx.iloc[-1]:.0f}", color=color, va="center",
+                fontsize=10, fontweight="bold" if a == "reth" else "normal")
+    ax.axhline(100, color="#777777", lw=0.8, ls="--")
+    ax.set_ylabel("Supplied on Aave v3 + Spark (first week = 100)")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.grid(alpha=0.25, axis="y")
+    fig.suptitle("Same markets, same borrowing cost: rETH loops halved while wstETH loops grew",
+                 x=0.01, ha="left", fontsize=13, fontweight="bold")
+    ax.set_title(f"Median looping spread (staking yield minus WETH borrow rate): rETH {med.get('rETH', float('nan')):.0f} bps, "
+                 f"wstETH {med.get('wstETH', float('nan')):.0f} bps", loc="left", fontsize=9, color="#555555")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+
+
 def main():
     panel = pd.read_csv(os.path.join(OUT_DIR, "weekly_panel.csv"))
     panel["date"] = pd.to_datetime(panel["date"], utc=True)
@@ -221,6 +247,7 @@ def main():
     summ = summary(df)
     summ.to_csv(os.path.join(OUT_DIR, "lending_summary.csv"), index=False)
     chart(df, os.path.join(OUT_DIR, "chart_lending_spread.png"))
+    chart_index(df, summ, os.path.join(OUT_DIR, "chart_lending_reth_vs_wsteth.png"))
     print(summ.round(3).to_string())
     print(reg.round(4).to_string())
 

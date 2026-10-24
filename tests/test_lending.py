@@ -99,4 +99,5 @@ aave = panel[panel["venue"] == "Aave v3"].reset_index(drop=True)
 assert abs(aave["reth_supplied"].iloc[-1] - MARKETS["Aave v3"]["reth_supply"][-1]) < 1e-6
 assert abs(aave["weth_borrow_apr"].iloc[5] - MARKETS["Aave v3"]["borrow"][5]) < 1e-9
 assert os.path.exists("reth_study/chart_lending_spread.png")
+assert os.path.exists("reth_study/chart_lending_reth_vs_wsteth.png")
 print("ALL LENDING TESTS PASSED")
