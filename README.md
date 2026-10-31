@@ -6,6 +6,20 @@ This repository answers that with public data only, and reruns itself every week
 
 > **Status:** work in progress. Numbers in `reth_study/` and `results/` are produced by the workflow below and may change as the method is reviewed. Nothing here is financial advice.
 
+## Key findings so far
+
+Data from 6 January 2024 to 24 October 2026. The CSV files below always hold the latest run.
+
+- **Who left.** rETH supply fell by 252,900. Protocol positions explain 64% of the drop: lending and CDPs −68,400, restaking −42,100, funds and DAO treasuries −18,200, DEX liquidity −17,700 and L2 bridges −16,200. Addresses holding under 500 rETH each explain 14%.
+- **Largest exits and gains.** EigenLayer −49,900, Spark −33,500, Prisma −25,200, Balancer −14,500, the Arbitrum bridge −13,800 and Nexus Mutual −10,900. Symbiotic +7,700, Liquity V2 +5,700 and Morpho +3,300.
+- **Since Saturn 1** (21 February 2026), supply fell by 32,800. Funds and DAO treasuries are the largest part of it (−13,300).
+- **Lending.** The share of all rETH deposited on Spark fell from 6.6% to 1.2%. On Aave v3 it rose from 7.8% to 10.9%. Across both markets, the median looping spread (staking yield minus the WETH borrow rate) was 15 bps for rETH and 42 bps for wstETH, and the fee difference explains about a third of that gap.
+- **Demand response.** Week to week, rETH flows show no reliable response to the yield gap with stETH: p = 0.92 at a one-week lag, and p = 0.03 at four weeks, which becomes 0.11 after correcting for the four lags tested.
+
+![Net change in rETH held, by holder type, January 2024 to October 2026](reth_study/chart_supply_change_by_holder.png)
+
+Discussion and feedback: [forum thread](https://dao.rocketpool.net/t/is-reths-fee-costing-it-demand-a-data-study-plan-first-numbers-feedback-welcome/4116).
+
 ## What it does
 
 The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
@@ -57,6 +71,7 @@ python tests/test_holders.py
 
 ## Context
 
+- Forum thread for this study: [Is rETH's fee costing it demand?](https://dao.rocketpool.net/t/is-reths-fee-costing-it-demand-a-data-study-plan-first-numbers-feedback-welcome/4116)
 - Forum discussion that motivated the study: [Increase rETH demand by reducing the voter share from 9% to 5%](https://dao.rocketpool.net/t/increase-reth-demand-by-reducing-the-voter-share-from-9-to-5-sentiment-poll/3969)
 - Fee labels used in the comparison come from DefiLlama's LSD list ([source](https://github.com/DefiLlama/yield-server/blob/master/src/handlers/triggerLSDRates.js)).
 
