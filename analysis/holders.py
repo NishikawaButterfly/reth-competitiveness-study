@@ -909,6 +909,8 @@ def main():
             if not total:
                 continue
             for c, v in leg.groupby("to" if out else "from")["amount"].sum().nlargest(3).items():
+                if v < 0.01:  # dust, e.g. zero-value transfers from address-poisoning look-alikes
+                    continue
                 if c == ZERO:
                     name, kind = ("rETH contract (burned: redeemed for ETH)" if out
                                   else "rETH contract (minted: ETH deposited)"), "reth"

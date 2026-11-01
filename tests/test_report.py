@@ -24,16 +24,21 @@ report.OUT_DIR, report.REPORTS_DIR = "reth_study", "reports"
 SPARK, WALLET, BAL = "0x" + "11" * 20, "0x" + "22" * 20, "0x" + "33" * 20
 dates = pd.date_range("2024-01-06", periods=8, freq="7D", tz="UTC")   # 6 Jan ... 24 Feb
 supply = [100_000, 100_500, 101_000, 102_000, 101_000, 100_000, 99_000, 98_000]
-pd.DataFrame({"date": dates, "block": range(1_000, 1_008), "reth_supply": supply,
-              "reth_apr": 0.027, "steth_apr": 0.030, "gap_bps": -30.0, "premium_pct": -0.10}).to_csv(
-    "reth_study/weekly_panel.csv", index=False)
+t = (dates - dates[0]).days.to_numpy()
+panel = pd.DataFrame({"date": dates, "block": range(1_000, 1_008), "reth_supply": supply,
+                      "reth_rate": 1.1 * 1.027 ** (t / 365), "steth_rate": 1.2 * 1.030 ** (t / 365),
+                      "reth_apr": 0.027, "steth_apr": 0.030, "gap_bps": -30.0, "premium_pct": -0.10})
+panel.loc[7, ["steth_apr", "gap_bps"]] = [0.050, -230.0]          # one odd week, as oracle timing can cause
+panel.to_csv("reth_study/weekly_panel.csv", index=False)
 pd.DataFrame([{"month": "2024-02", "start_snapshot": "2024-01-27", "end_snapshot": "2024-02-24", "weeks": 4,
                "block_from": 1_004, "block_to": 1_007, "supply_start": 102_000, "supply_end": 98_000,
                "supply_change": -4_000, "transfers": 1_234, "minted": 1_000, "burned": 5_000}]).to_csv(
     "reth_study/holders_month.csv", index=False)
-pd.DataFrame({"week_ending": ["2024-02-03", "2024-02-10", "2024-02-17", "2024-02-24"],
-              "minted": [250.0] * 4, "burned": [1_250.0] * 4, "supply_change": [-1_000.0] * 4,
-              "source": ["good"] * 4}).to_csv("reth_study/holders_weeks.csv", index=False)
+pd.DataFrame({"week_ending": ["2024-01-13", "2024-01-20", "2024-01-27",
+                             "2024-02-03", "2024-02-10", "2024-02-17", "2024-02-24"],
+              "minted": [600.0, 600.0, 1_100.0] + [250.0] * 4, "burned": [100.0, 100.0, 100.0] + [1_250.0] * 4,
+              "supply_change": [500.0, 500.0, 1_000.0] + [-1_000.0] * 4,
+              "source": ["good"] * 7}).to_csv("reth_study/holders_weeks.csv", index=False)
 cat = pd.DataFrame({"net_since_2024": [-5_000, -1_000, 400, -2_000, 600], "addresses_since_2024": [1, 3, 2, 5, 900],
                     "net_since_saturn1": [0, -500, 0, -100, 100], "addresses_since_saturn1": [0, 2, 0, 1, 50],
                     "net_month": [0, -3_000, 500, -1_200, -300], "addresses_month": [0, 2, 1, 1, 400]},
@@ -43,18 +48,25 @@ cat.to_csv("reth_study/holders_by_category.csv")
 pd.DataFrame({"category": ["Lending and CDPs", "DEX liquidity", "Lending and CDPs"],
               "net_since_2024": [-1_000, 400, 0], "net_since_saturn1": [-500, 0, 0], "net_month": [-3_000, 500, 5]},
              index=pd.Index(["Spark", "Balancer", "Aave v3"], name="entity")).to_csv("reth_study/holders_by_entity.csv")
-pd.DataFrame({"net": [-3_000, -1_200, 500], "label": ["Spark spRETH", "", "Balancer V2 Vault"],
-              "entity": ["Spark", "", "Balancer"], "holder_type": ["Lending and CDPs", "Large wallets", "DEX liquidity"],
-              "kind": ["contract", "wallet", "contract"], "who": ["Spark spRETH", "someone.eth", "Balancer V2 Vault"],
-              "ens": ["", "someone.eth", ""], "balance_start": [5_000, 1_200, 100], "balance_end": [2_000, 0, 600]},
-             index=pd.Index([SPARK, WALLET, BAL], name="address")).to_csv("reth_study/holders_month_movers.csv")
+W2, W3 = "0x" + "55" * 20, "0x" + "66" * 20
+pd.DataFrame({"net": [-3_000, -1_200, 500, -1_500, 1_500], "label": ["Spark spRETH", "", "Balancer V2 Vault", "", ""],
+              "entity": ["Spark", "", "Balancer", "", ""],
+              "holder_type": ["Lending and CDPs", "Large wallets", "DEX liquidity", "Large wallets", "Large wallets"],
+              "kind": ["contract", "wallet", "contract", "wallet", "wallet"],
+              "who": ["Spark spRETH", "someone.eth", "Balancer V2 Vault", "0x5555...5555", "0x6666...6666"],
+              "ens": ["", "someone.eth", "", "", ""], "balance_start": [5_000, 1_200, 100, 1_500, 0],
+              "balance_end": [2_000, 0, 600, 0, 1_500]},
+             index=pd.Index([SPARK, WALLET, BAL, W2, W3], name="address")).to_csv("reth_study/holders_month_movers.csv")
 FRIEND = "0x" + "44" * 20
-pd.DataFrame({"address": [SPARK, WALLET, WALLET],
-              "direction": ["sent to", "sent to", "sent to"],
-              "counterparty": [WALLET, "0x" + "00" * 20, FRIEND],
-              "counterparty_name": ["0x2222...2222", "rETH contract (burned: redeemed for ETH)", "friend.eth"],
-              "counterparty_kind": ["wallet", "reth", "wallet"],
-              "reth": [3_000, 1_100, 100], "share": [1.0, 1_100 / 1_200, 100 / 1_200]}).to_csv(
+POISON = "0x55" + "ab" * 18 + "5555"
+pd.DataFrame({"address": [SPARK, WALLET, WALLET, W2, W2, W3],
+              "direction": ["sent to", "sent to", "sent to", "sent to", "sent to", "received from"],
+              "counterparty": [WALLET, "0x" + "00" * 20, FRIEND, W3, POISON, W2],
+              "counterparty_name": ["0x2222...2222", "rETH contract (burned: redeemed for ETH)", "friend.eth",
+                                    "0x6666...6666", "0x55ab...5555", "0x5555...5555"],
+              "counterparty_kind": ["wallet", "reth", "wallet", "wallet", "wallet", "wallet"],
+              "reth": [3_000, 1_100, 100, 1_500, 0.0, 1_500],
+              "share": [1.0, 1_100 / 1_200, 100 / 1_200, 1.0, 0.0, 1.0]}).to_csv(
     "reth_study/holders_month_counterparties.csv", index=False)
 rows = []
 for d, i in zip(dates, range(8)):
@@ -85,7 +97,13 @@ assert "From January 2024 to 24 February 2024, rETH supply changed by −7,000" 
 assert "| Spark | 5,000 → 2,000 | 2.0% | 33,000 → 37,000 | 20 bps | 50 bps |" in md, md
 assert "All 4 weeks reconcile exactly" in md
 assert "Not yet written." in md and "Protocol positions together: −2,500 rETH" in md
-assert "a gap of −30 bps" in md and "−0.10%" in md
+assert "over the month rETH earned 2.70% and stETH 3.00%" in md and "a gap of −30 bps" in md, md
+assert "One week stands out" in md and "stETH in the week to 24 February 2024: 5.00% annualised" in md
+assert "| Weekly gaps, in order (bps) | −30, −30, −30, −230 |" in md and "−0.10%" in md
+assert "1,000 rETH minted and 5,000 burned (redeemed for ETH), against monthly averages of 2,300 and 300" in md
+assert "- **Wallet-to-wallet transfers:** 1 transfer between unlabelled wallets, 1,500 rETH in total." in md
+assert "(wallet-to-wallet transfer) |" in md and POISON not in md
+assert "Largest single moves:** Spark spRETH" in md and "+1,500;" not in md.split("Largest single moves")[1].split(chr(10))[0]
 
 # ---- hand-written notes replace the open questions ---------------------------------------------
 os.makedirs("reports/notes")
@@ -96,7 +114,7 @@ assert "Spark lowered rETH's supply cap on 12 February (test note)." in md and "
 
 # ---- a week that does not reconcile is flagged ------------------------------------------------
 w = pd.read_csv("reth_study/holders_weeks.csv")
-w.loc[2, "minted"] = 260.0
+w.loc[5, "minted"] = 260.0          # a February week
 w.to_csv("reth_study/holders_weeks.csv", index=False)
 md = open(report.main(), encoding="utf-8").read()
 assert "**Warning:** not every week" in md and "All 4 weeks reconcile" not in md

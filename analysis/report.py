@@ -19,6 +19,7 @@ OUT_DIR = os.environ.get("OUT_DIR", "reth_study")
 REPORTS_DIR = os.environ.get("REPORTS_DIR", "reports")
 REPO = "https://github.com/NishikawaButterfly/reth-competitiveness-study"
 MOVER = 1_000.0
+DUST = 0.01  # rETH: transfers below this are ignored as counterparties
 VENUES = ["Aave v3", "Spark"]
 PROTOCOL_TYPES = ["Restaking", "Lending and CDPs", "DEX liquidity", "L2 bridges", "Funds and DAO treasuries"]
 TYPE_LABEL = {"Large wallets": "Large wallets (500+ rETH moved)",
@@ -67,18 +68,76 @@ def main_flow(addr, cp):
     """The largest counterparty of a mover in the month, e.g. '100% sent to Balancer V2 Vault'."""
     if cp is None:
         return ""
-    rows = cp[cp["address"] == addr]
-    if rows.empty:
+    r = top_counterparty(addr, cp)
+    if r is None:
         return ""
-    r = rows.sort_values("reth", ascending=False).iloc[0]
     kind = r["counterparty_kind"]
     if kind == "wallet":
         name = f"a wallet {etherscan(r['counterparty'])}"
     elif kind == "contract":
-        name = f"contract {r['counterparty_name']} ({etherscan(r['counterparty'])})"
+        name = f"contract {str(r['counterparty_name']).split('->')[-1].strip()} ({etherscan(r['counterparty'])})"
     else:
         name = r["counterparty_name"]
     return f"{r['share']:.0%} {r['direction']} {name}"
+
+
+def top_counterparty(addr, cp):
+    """The largest counterparty of an address, ignoring dust (zero-value transfers from address-poisoning
+    look-alike addresses are common and must never be shown as a counterparty)."""
+    if cp is None:
+        return None
+    rows = cp[(cp["address"] == addr) & (cp["reth"] >= DUST)]
+    return None if rows.empty else rows.sort_values("reth", ascending=False).iloc[0]
+
+
+def wallet_pairs(shown, cp):
+    """Wallet-to-wallet transfers among the listed movers: A sent (almost) all it moved to B, and B's
+    gain matches. They move rETH between holders without changing supply."""
+    pairs = {}
+    for a, r in shown[shown["net"] < 0].iterrows():
+        c = top_counterparty(a, cp)
+        if c is None or c["counterparty_kind"] != "wallet" or c["share"] < 0.99 or c["counterparty"] not in shown.index:
+            continue
+        if abs(shown.loc[c["counterparty"], "net"] + r["net"]) <= 0.01 * abs(r["net"]):
+            pairs[a] = pairs[c["counterparty"]] = -r["net"]
+    return pairs
+
+
+def yield_stats(panel, start, end):
+    """APR over the month from each token's exchange rate at both ends, the weekly gaps, and weeks whose
+    weekly APR is far from the month's median (oracle timing or an unusual event: worth a look)."""
+    s = panel[panel["date"] == start]
+    e = panel[panel["date"] == end]
+    inside = panel[(panel["date"] > start) & (panel["date"] <= end)]
+    if s.empty or e.empty or inside.empty:
+        return None
+    s, e, days = s.iloc[0], e.iloc[0], (end - start).days
+    reth = (e["reth_rate"] / s["reth_rate"]) ** (365 / days) - 1
+    steth = (e["steth_rate"] / s["steth_rate"]) ** (365 / days) - 1
+    odd = []
+    for col, name in (("reth_apr", "rETH"), ("steth_apr", "stETH")):
+        med = inside[col].median()
+        for _, w in inside[(inside[col] - med).abs() > 0.01].iterrows():
+            odd.append(f"{name} in the week to {day(w['date'])}: {w[col] * 100:.2f}% annualised against a "
+                       f"monthly median of {med * 100:.2f}%")
+    return {"reth": reth, "steth": steth, "gap": (reth - steth) * 1e4,
+            "weekly_gaps": ", ".join(signed(g) for g in inside["gap_bps"]), "odd": odd,
+            "premium": inside["premium_pct"].median() if "premium_pct" in inside else np.nan}
+
+
+def flow_context(weeks, month):
+    """Minted and burned in the month, and the average of the six months before."""
+    if weeks is None:
+        return None
+    w = weeks.copy()
+    w["m"] = pd.to_datetime(w["week_ending"]).dt.to_period("M").astype(str)
+    g = w.groupby("m")[["minted", "burned"]].sum()
+    if month not in g.index:
+        return None
+    prev = g[g.index < month].tail(6)
+    return {"minted": g.loc[month, "minted"], "burned": g.loc[month, "burned"],
+            "minted_avg": prev["minted"].mean() if len(prev) else np.nan,
+            "burned_avg": prev["burned"].mean() if len(prev) else np.nan, "n_prev": len(prev)}
 
 
 def waterfall(steps, path, title, subtitle):
@@ -169,7 +228,6 @@ def main():
         raise RuntimeError("holders_by_category.csv has no month column: run analysis/holders.py first.")
 
     panel["date"] = pd.to_datetime(panel["date"], utc=True)
-    inside = panel[(panel["date"] > start) & (panel["date"] <= end)]
     s0, s1, change = float(meta["supply_start"]), float(meta["supply_end"]), float(meta["supply_change"])
 
     steps = cat.drop(index=TOTAL)["net_month"]
@@ -186,6 +244,9 @@ def main():
     shown = big if not big.empty else (pd.concat([movers.nsmallest(3, "net"), movers.nlargest(3, "net")])
                                        if movers is not None else pd.DataFrame())
     lrows = lending_rows(lend, start, end, s1)
+    pairs = wallet_pairs(shown, cp) if not shown.empty else {}
+    ys = yield_stats(panel, start, end)
+    fc = flow_context(weeks, month)
 
     # ---- summary ----
     order = steps.sort_values()
@@ -205,10 +266,19 @@ def main():
         if top_pos:
             parts.append("largest increases: " + ", ".join(top_pos))
         lines.append(f"- **By holder type:** {'; '.join(parts)}. Protocol positions together: {signed(prot.sum())} rETH.")
-    if not shown.empty:
-        names = [f"{mover_name(a, r)} {signed(r['net'])}" for a, r in shown.reindex(
-            shown["net"].abs().sort_values(ascending=False).index).head(3).iterrows()]
+    if fc and fc["n_prev"]:
+        lines.append(f"- **Minting and redemptions:** {num(fc['minted'])} rETH minted and {num(fc['burned'])} burned "
+                     f"(redeemed for ETH), against monthly averages of {num(fc['minted_avg'])} and "
+                     f"{num(fc['burned_avg'])} over the previous {fc['n_prev']} months.")
+    solo = shown[~shown.index.isin(list(pairs))]
+    if not solo.empty:
+        names = [f"{mover_name(a, r)} {signed(r['net'])}" for a, r in solo.reindex(
+            solo["net"].abs().sort_values(ascending=False).index).head(3).iterrows()]
         lines.append(f"- **Largest single moves:** {'; '.join(names)}.")
+    if pairs:
+        n = len(pairs) // 2
+        lines.append(f"- **Wallet-to-wallet transfers:** {n} transfer{'s' if n != 1 else ''} between unlabelled "
+                     f"wallets, {num(sum(pairs.values()) / 2)} rETH in total. They change who holds rETH, not the supply.")
     if lrows:
         rs = sum(r["reth_start"] for r in lrows)
         re_ = sum(r["reth_end"] for r in lrows)
@@ -216,23 +286,29 @@ def main():
                      f"{num(re_)}. Median loop spread: " + "; ".join(
                          f"{r['venue']} {num(r['reth_spread'])} bps for rETH and {num(r['wsteth_spread'])} bps for wstETH"
                          for r in lrows) + ".")
-    if not inside.empty:
-        lines.append(f"- **Yield:** median weekly APR {inside['reth_apr'].median() * 100:.2f}% for rETH and "
-                     f"{inside['steth_apr'].median() * 100:.2f}% for stETH, a gap of "
-                     f"{signed(inside['gap_bps'].median())} bps.")
+    if ys:
+        lines.append(f"- **Yield:** over the month rETH earned {ys['reth'] * 100:.2f}% and stETH {ys['steth'] * 100:.2f}% "
+                     f"(annualised from their exchange rates), a gap of {signed(ys['gap'])} bps."
+                     + (" One week stands out; see section 1." if ys["odd"] else ""))
 
     # ---- 1. supply and yield ----
     lines += ["", "## 1. Supply and yield", "", "| Measure | Value |", "| --- | --- |",
               f"| rETH supply, start → end | {num(s0)} → {num(s1)} ({signed(change)}) |",
-              f"| Minted / burned in the month | {num(meta['minted'])} / {num(meta['burned'])} |",
-              f"| Transfers in the month | {int(meta['transfers']):,} |"]
-    if not inside.empty:
-        lines += [f"| rETH APR, weekly median | {inside['reth_apr'].median() * 100:.2f}% |",
-                  f"| stETH APR, weekly median | {inside['steth_apr'].median() * 100:.2f}% |",
-                  f"| Yield gap rETH − stETH, weekly median | {signed(inside['gap_bps'].median())} bps |"]
-        if "premium_pct" in inside and inside["premium_pct"].notna().any():
-            lines.append(f"| rETH market price vs protocol rate, weekly median | "
-                         f"{signed(inside['premium_pct'].median(), 2)}% |")
+              f"| Minted / burned in the month | {num(meta['minted'])} / {num(meta['burned'])} |"]
+    if fc and fc["n_prev"]:
+        lines.append(f"| Minted / burned, monthly average of the previous {fc['n_prev']} months | "
+                     f"{num(fc['minted_avg'])} / {num(fc['burned_avg'])} |")
+    lines.append(f"| Transfers in the month | {int(meta['transfers']):,} |")
+    if ys:
+        lines += [f"| rETH APR over the month, from its exchange rate | {ys['reth'] * 100:.2f}% |",
+                  f"| stETH APR over the month, from its exchange rate | {ys['steth'] * 100:.2f}% |",
+                  f"| Yield gap rETH − stETH | {signed(ys['gap'])} bps |",
+                  f"| Weekly gaps, in order (bps) | {ys['weekly_gaps']} |"]
+        if pd.notna(ys["premium"]):
+            lines.append(f"| rETH market price vs protocol rate, weekly median | {signed(ys['premium'], 2)}% |")
+        if ys["odd"]:
+            lines += ["", "Check before reading the gap: " + "; ".join(ys["odd"]) + ". Weekly rates move with oracle "
+                      "timing, so a single week can be off; the monthly figure uses both ends of the month."]
 
     # ---- 2. who moved ----
     lines += ["", "## 2. Who moved rETH", "", f"![rETH net change by holder type, {title_month}]({chart})", "",
@@ -263,8 +339,9 @@ def main():
         for a, r in shown.sort_values("net").iterrows():
             b0 = num(r["balance_start"]) if "balance_start" in r and pd.notna(r["balance_start"]) else "n/a"
             b1 = num(r["balance_end"]) if "balance_end" in r and pd.notna(r["balance_end"]) else "n/a"
+            flow = main_flow(a, cp) + (" (wallet-to-wallet transfer)" if a in pairs else "")
             lines.append(f"| {mover_name(a, r)} | {TYPE_LABEL.get(r['holder_type'], r['holder_type'])} | "
-                         f"{signed(r['net'])} | {b0} | {b1} | {main_flow(a, cp)} |")
+                         f"{signed(r['net'])} | {b0} | {b1} | {flow} |")
 
     # ---- 3. lending ----
     if lrows:
@@ -278,7 +355,8 @@ def main():
                          f"{num(r['wsteth_spread'])} bps |")
         lines += ["", "Loop spread: staking yield (4-week average) minus the WETH variable borrow rate on the same "
                   "market. Both assets borrow the same WETH, so the gap between the two columns is the staking "
-                  "yield gap."]
+                  "yield gap. Deposits are the market's aToken supply, which includes any rETH lent out to "
+                  "borrowers, so they can sit slightly above the rETH balance shown in section 2."]
         stale = [r["venue"] for r in lrows if r["end_date"] < end]
         if stale:
             lines.append(f"Lending data for {', '.join(stale)} ends before {day(end)}; the latest week is shown.")
