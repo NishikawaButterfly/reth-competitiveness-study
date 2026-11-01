@@ -871,8 +871,7 @@ def main():
         if abs(dec.loc["Total (= supply change)", f"net_{name}"] - change) > 1e-4:
             raise RuntimeError("Holder types do not add up to the supply change: stop and review.")
     dec.to_csv(os.path.join(OUT_DIR, "holders_by_category.csv"))
-    if labels:
-        by_entity(nets, labels).to_csv(os.path.join(OUT_DIR, "holders_by_entity.csv"))
+    ent_df = by_entity(nets, labels) if labels else None
 
     # 4b. The report month: its window, and every address that moved at least MOVER rETH
     if ks:
@@ -925,15 +924,47 @@ def main():
         pd.DataFrame(rows, columns=["address", "direction", "counterparty", "counterparty_name",
                                     "counterparty_kind", "reth", "share"]).to_csv(
             os.path.join(OUT_DIR, "holders_month_counterparties.csv"), index=False)
+        # who redeemed (burned) and who minted rETH this month, and the week each did most of it;
+        # wallets are shown by address only
+        rows = []
+        for side, s in (("burned", mt[mt["to"] == ZERO].groupby(["from", "week"])["amount"].sum()),
+                        ("minted", mt[mt["from"] == ZERO].groupby(["to", "week"])["amount"].sum())):
+            if s.empty:
+                continue
+            for a, v in s.groupby(level=0).sum().nlargest(10 if side == "burned" else 5).items():
+                per_week = s.loc[a]
+                kind = kind_of(a, rpcs)
+                rows.append({"side": side, "address": a, "reth": float(v), "share": float(v) / float(s.sum()),
+                             "peak_week_ending": panel["date"].iloc[int(per_week.idxmax())].date(),
+                             "peak_week_reth": float(per_week.max()), "kind": kind,
+                             "label": labels.get(a, {}).get("label", ""), "entity": labels.get(a, {}).get("entity", ""),
+                             "who": who(a, labels, rpcs) if (kind != "wallet" or a in labels) else short(a)})
+        pd.DataFrame(rows, columns=["side", "address", "reth", "share", "peak_week_ending", "peak_week_reth",
+                                    "kind", "label", "entity", "who"]).to_csv(
+            os.path.join(OUT_DIR, "holders_month_mint_burn.csv"), index=False)
+        # the "Other addresses" bucket: which of its larger members are contracts (DEX pools, routers)
+        others = m[(types.reindex(m.index) == "Other addresses").to_numpy() & (m["net"].abs() >= 50).to_numpy()]
+        others = others.loc[others["net"].abs().sort_values(ascending=False).index[:300], ["net"]].copy()
+        others["kind"] = [kind_of(a, rpcs) for a in others.index]
+        others["who"] = [display_name(address_info(a, rpcs), a) if k == "contract" else ""
+                         for a, k in zip(others.index, others["kind"])]
+        others.to_csv(os.path.join(OUT_DIR, "holders_month_others.csv"))
+        # each identified entity's holdings at both ends of the month
+        if ent_df is not None and archive:
+            eb = pd.DataFrame({a: {"entity": labels[a]["entity"],
+                                   "balance_month_start": balance(archive, a, int(blk[k0])),
+                                   "balance_month_end": balance(archive, a, int(blk[k1]))} for a in labels}).T
+            eb[["balance_month_start", "balance_month_end"]] = eb[["balance_month_start", "balance_month_end"]].astype(float)
+            ent_df = ent_df.join(eb.groupby("entity")[["balance_month_start", "balance_month_end"]].sum(min_count=1))
         dbg(f"Report month {month}: {len(ks)} weeks, supply change {sup[k1] - sup[k0]:+,.1f} rETH, "
             f"{int((m['net'].abs() >= MOVER).sum())} addresses moved {MOVER:,.0f}+ rETH")
-    big = pd.DataFrame({"net_since_2024": net["net"], "net_since_saturn1": net_s1["net"]}).fillna(0)
+    if ent_df is not None:
+        ent_df.to_csv(os.path.join(OUT_DIR, "holders_by_entity.csv"))
+    big =pd.DataFrame({"net_since_2024": net["net"], "net_since_saturn1": net_s1["net"]}).fillna(0)
     big = big[(big.index != ZERO) & ~big.index.isin(list(labels))
               & ((big["net_since_2024"].abs() >= BIG) | (big["net_since_saturn1"].abs() >= BIG))].copy()
     big["kind"] = [kind_of(a, rpcs) for a in big.index]
-    big["who"] = [display_name(address_info(a, rpcs), a)
-                  if k == "contract" and max(abs(x), abs(y)) >= 1_000 else ""
-                  for a, k, x, y in zip(big.index, big["kind"], big["net_since_2024"], big["net_since_saturn1"])]
+    big["who"] = [display_name(address_info(a, rpcs), a) if k == "contract" else "" for a, k in zip(big.index, big["kind"])]
     big.sort_values("net_since_2024").to_csv(os.path.join(OUT_DIR, "holders_unlabelled_big.csv"))
     counterparties(tr, list(top.index[:10]), labels, rpcs).to_csv(
         os.path.join(OUT_DIR, "holders_counterparties.csv"), index=False)

@@ -239,6 +239,16 @@ assert cpm.loc[WHALE, "direction"] == "sent to" and cpm.loc[WHALE, "counterparty
 assert abs(cpm.loc[WHALE, "reth"] - 2_000) < 1e-6 and abs(cpm.loc[WHALE, "share"] - 1) < 1e-9
 assert cpm.loc[POOL, "counterparty_kind"] == "reth" and "redeemed for ETH" in cpm.loc[POOL, "counterparty_name"]
 assert BIGW not in cpm.index                       # moved 700 rETH: under the 1,000 rETH threshold
+mb = pd.read_csv("reth_study/holders_month_mint_burn.csv")
+burn = mb[mb["side"] == "burned"].set_index("address")
+assert burn.index[0] == POOL and abs(burn.loc[POOL, "reth"] - 4_000) < 1e-6 and abs(burn.loc[POOL, "share"] - 1) < 1e-9
+assert burn.loc[POOL, "peak_week_ending"] == str(dates[7].date()) and burn.loc[POOL, "who"] == "Test pool"
+mint = mb[mb["side"] == "minted"].set_index("address")
+assert mint.index[0] == BIGW and abs(mint.loc[BIGW, "reth"] - 700) < 1e-6 and mint.loc[BIGW, "who"].startswith("0xb4b4")
+ent2 = pd.read_csv("reth_study/holders_by_entity.csv", index_col=0)
+assert abs(ent2.loc["Test DEX", "balance_month_start"] - 5_000) < 1e-6 and abs(ent2.loc["Test DEX", "balance_month_end"] - 3_000) < 1e-6
+oth = pd.read_csv("reth_study/holders_month_others.csv", index_col=0)
+assert set(oth.columns) >= {"net", "kind", "who"} and (oth["net"].abs() >= 50).all()
 calls_first = sum(s.log_calls for s in SOURCES)
 
 # rerun: every week comes from the cache, no log requests at all
