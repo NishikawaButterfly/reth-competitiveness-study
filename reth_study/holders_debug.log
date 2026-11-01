@@ -1,6 +1,7 @@
-2026-11-01 01:46:10 Window: blocks 18944482 to 26309020, 147 weeks; supply 562,349.8 -> 308,005.1 rETH
-2026-11-01 01:46:26 All weeks cached; 35 of 55 endpoints answered (used for balances and names)
-2026-11-01 01:46:27 Weeks from cache: 147; to fetch: 0 with 0 sources
-2026-11-01 01:46:27 Transfers in window: 710,063
-2026-11-01 01:46:28 Archive sources for balances: eth.drpc.org, rpc.mevblocker.io, eth-mainnet.public.blastapi.io
-2026-11-01 01:48:12 Report month 2026-10: 5 weeks, supply change -8,230.2 rETH, 7 addresses moved 1,000+ rETH
+2026-11-01 01:57:43 Window: blocks 18944482 to 26309020, 147 weeks; supply 562,349.8 -> 308,005.1 rETH
+2026-11-01 01:57:58 All weeks cached; 36 of 55 endpoints answered (used for balances and names)
+2026-11-01 01:57:59 Weeks from cache: 147; to fetch: 0 with 0 sources
+2026-11-01 01:57:59 Transfers in window: 710,063
+2026-11-01 01:58:01 Archive sources for balances: eth.drpc.org, rpc.mevblocker.io, eth-mainnet.public.blastapi.io
+2026-11-01 01:58:18 Blockscout address lookups failing; names will come from labels.csv only
+2026-11-01 01:59:21 Report month 2026-10: 5 weeks, supply change -8,230.2 rETH, 7 addresses moved 1,000+ rETH
