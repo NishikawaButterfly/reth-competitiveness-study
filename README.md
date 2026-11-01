@@ -8,13 +8,14 @@ This repository answers that with public data only, and reruns itself every week
 
 ## Key findings so far
 
-Data from 6 January 2024 to 24 October 2026. The CSV files below always hold the latest run.
+Data from 6 January 2024 to 31 October 2026. The CSV files below always hold the latest run.
 
-- **Who left.** rETH supply fell by 252,900. Protocol positions explain 64% of the drop: lending and CDPs −68,400, restaking −42,100, funds and DAO treasuries −18,200, DEX liquidity −17,700 and L2 bridges −16,200. The 58,440 addresses that each moved less than 500 rETH, net, explain 14%.
-- **Largest exits and gains.** EigenLayer −49,900, Spark −33,500, Prisma −25,200, Balancer −14,500, the Arbitrum bridge −13,800 and Nexus Mutual −10,900. Symbiotic +7,700, Liquity V2 +5,700 and Morpho +3,300.
-- **Since Saturn 1** (18 February 2026), supply fell by 32,800. Funds and DAO treasuries are the largest part of it (−13,300).
-- **Lending.** The share of all rETH deposited on Spark fell from 6.6% to 1.2%. On Aave v3 it rose from 7.8% to 10.9%. Across both markets, the median looping spread (staking yield minus the WETH borrow rate) was 15 bps for rETH and 42 bps for wstETH, and the 14% vs 10% fee difference accounts for about 40% of that gap.
-- **Demand response.** Week to week, rETH flows show no reliable response to the yield gap with stETH: p = 0.92 at a one-week lag, and p = 0.03 at four weeks, which becomes 0.11 after correcting for the four lags tested.
+- **Who left.** rETH supply fell by 254,300. Protocol positions explain 65% of the drop: lending and CDPs −68,600, restaking −42,300, DEX liquidity −18,600, funds and DAO treasuries −18,200 and L2 bridges −17,700. The 58,655 addresses that each moved less than 500 rETH, net, explain 14%.
+- **Largest exits and gains.** EigenLayer −50,000, Spark −33,600, Prisma −25,200, Balancer −14,700, the Arbitrum bridge −13,800 and Nexus Mutual −10,900. Symbiotic +7,700, Liquity V2 +5,600 and Morpho +3,300.
+- **Since Saturn 1** (18 February 2026, measured from the first weekly snapshot after it), supply fell by 34,200. Funds and DAO treasuries are the largest part of it (−13,300).
+- **Lending.** The share of all rETH deposited on Spark fell from 6.6% to 1.2%. On Aave v3 it rose from 7.8% to 11.3%. Across both markets, the median looping spread (staking yield minus the WETH borrow rate) was 14 bps for rETH and 41 bps for wstETH, and the 14% vs 10% fee difference accounts for about 40% of that gap.
+- **Demand response.** Week to week, rETH flows show no reliable response to the yield gap with stETH: p = 0.92 at a one-week lag, and p = 0.03 at four weeks, which becomes 0.12 after correcting for the four lags tested.
+- **Monthly report.** The first one, for October 2026, is in [reports/2026-10.md](reports/2026-10.md): who moved rETH that month, who redeemed it, and why.
 
 ![Net change in rETH held, by holder type, January 2024 to October 2026](reth_study/chart_supply_change_by_holder.png)
 
