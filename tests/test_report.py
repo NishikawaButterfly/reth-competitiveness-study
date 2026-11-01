@@ -10,6 +10,7 @@ import os
 import sys
 import tempfile
 
+import numpy as np
 import pandas as pd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,8 +83,10 @@ pd.DataFrame({"side": ["burned", "burned", "minted"], "address": [ARB, WALLET, F
               "reth": [3_900, 1_100, 800], "share": [0.78, 0.22, 0.8],
               "peak_week_ending": ["2024-02-17", "2024-02-10", "2024-02-03"], "peak_week_reth": [3_000, 1_100, 800],
               "kind": ["contract", "wallet", "wallet"], "label": ["", "", ""], "entity": ["", "", ""],
-              "who": ["ArbBot", "someone.eth", "friend.eth"]}).to_csv("reth_study/holders_month_mint_burn.csv",
-                                                                      index=False)
+              "who": ["ArbBot", "someone.eth", "friend.eth"], "source": [BAL, "", ""],
+              "source_name": ["Balancer V2 Vault", "", ""], "source_kind": ["labelled", "", ""],
+              "source_share": [0.95, np.nan, np.nan], "same_tx_share": [1.0, 0.0, np.nan]}).to_csv(
+    "reth_study/holders_month_mint_burn.csv", index=False)
 pd.DataFrame({"net": [-200.0, -60.0, 80.0], "kind": ["wallet", "contract", "wallet"], "who": ["", "UniswapV3Pool", ""]},
              index=pd.Index([FRIEND, POOL, "0x" + "99" * 20], name="address")).to_csv("reth_study/holders_month_others.csv")
 rows = []
@@ -134,6 +137,17 @@ assert "| 92% sent to rETH contract (burned: redeemed for ETH) |" in md and POIS
 assert "(wallet-to-wallet transfer) |" in md
 assert ("| Contract ArbBot ([0x777777…777777](https://etherscan.io/address/" + ARB
         + ")) | 3,900 | 78% | 17 February 2024 (3,000) |") in md
+assert "| 17 February 2024 (3,000) | 95% from Balancer V2 Vault | 100% |" in md, md
+assert ("| Unlabelled wallet [0x222222…222222](https://etherscan.io/address/" + WALLET
+        + ") | 1,100 | 22% | 10 February 2024 (1,100) | none this month | 0% |") in md, md
+assert "Burned on arrival: the share of what it burned that it received in the same transaction" in md
+assert "Rows are rounded" not in md                                  # whole numbers add up exactly
+assert report.rounding_note([-1_150.4, -2_660.6], -3_811.0) == ""
+assert report.rounding_note([-443.4, -1_150.4, -934.4], -2_528.2).startswith("Rows are rounded")
+assert report.source_text({"source": W2, "source_name": "0x5555...5555", "source_kind": "wallet",
+                           "source_share": 0.5}) == "50% from a wallet [0x555555…555555](https://etherscan.io/address/" + W2 + ")"
+assert report.source_text({"source": POOL, "source_name": "UniswapV3Pool", "source_kind": "contract",
+                           "source_share": 1.0}).startswith("100% from contract UniswapV3Pool ([0x")
 assert "Largest mints: Unlabelled wallet [0x444444…444444]" in md
 # section 2: no notes yet
 assert "Not yet written." in md

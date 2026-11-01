@@ -757,6 +757,31 @@ def counterparties(tr, addrs, labels, rpcs, k=3):
     return pd.DataFrame(rows)
 
 
+def name_kind(c, labels, rpcs):
+    """How a counterparty is named: by label, by its verified contract name, or a wallet by address only."""
+    if labels.get(c, {}).get("label"):
+        return labels[c]["label"], "labelled"
+    info = address_info(c, rpcs)
+    return (display_name(info, c), "contract") if info.get("is_contract") else (short(c), "wallet")
+
+
+def redeemer_source(mt, a, burned, labels, rpcs):
+    """Where a redeemer's rETH came from in the month, and the share of what it burned that it
+    received in the same transaction as a burn (bought or routed from a seller, then redeemed at once)."""
+    inflow = mt[(mt["to"] == a) & (mt["from"] != a) & (mt["from"] != ZERO)]
+    burn_tx = {t for t in mt.loc[(mt["from"] == a) & (mt["to"] == ZERO), "tx"] if isinstance(t, str) and t}
+    same = float(inflow.loc[inflow["tx"].isin(burn_tx), "amount"].sum())
+    out = {"source": "", "source_name": "", "source_kind": "", "source_share": np.nan,
+           "same_tx_share": min(same, burned) / burned if burned else np.nan}
+    by = inflow.groupby("from")["amount"].sum()
+    by = by[by >= 0.01]  # dust, e.g. zero-value transfers from address-poisoning look-alikes
+    if not by.empty:
+        c = by.idxmax()
+        name, kind = name_kind(c, labels, rpcs)
+        out.update(source=c, source_name=name, source_kind=kind, source_share=float(by[c]) / float(by.sum()))
+    return out
+
+
 def display_name(row, addr):
     for k in ("label", "tags", "profile", "name", "ens"):
         v = row.get(k, "")
@@ -913,11 +938,8 @@ def main():
                 if c == ZERO:
                     name, kind = ("rETH contract (burned: redeemed for ETH)" if out
                                   else "rETH contract (minted: ETH deposited)"), "reth"
-                elif labels.get(c, {}).get("label"):
-                    name, kind = labels[c]["label"], "labelled"
                 else:
-                    info = address_info(c, rpcs)
-                    name, kind = (display_name(info, c), "contract") if info.get("is_contract") else (short(c), "wallet")
+                    name, kind = name_kind(c, labels, rpcs)
                 rows.append({"address": a, "direction": "sent to" if out else "received from", "counterparty": c,
                              "counterparty_name": name, "counterparty_kind": kind, "reth": float(v),
                              "share": float(v) / total})
@@ -925,7 +947,7 @@ def main():
                                     "counterparty_kind", "reth", "share"]).to_csv(
             os.path.join(OUT_DIR, "holders_month_counterparties.csv"), index=False)
         # who redeemed (burned) and who minted rETH this month, and the week each did most of it;
-        # wallets are shown by address only
+        # for redeemers, where their rETH came from; wallets are shown by address only
         rows = []
         for side, s in (("burned", mt[mt["to"] == ZERO].groupby(["from", "week"])["amount"].sum()),
                         ("minted", mt[mt["from"] == ZERO].groupby(["to", "week"])["amount"].sum())):
@@ -934,13 +956,17 @@ def main():
             for a, v in s.groupby(level=0).sum().nlargest(10 if side == "burned" else 5).items():
                 per_week = s.loc[a]
                 kind = kind_of(a, rpcs)
-                rows.append({"side": side, "address": a, "reth": float(v), "share": float(v) / float(s.sum()),
-                             "peak_week_ending": panel["date"].iloc[int(per_week.idxmax())].date(),
-                             "peak_week_reth": float(per_week.max()), "kind": kind,
-                             "label": labels.get(a, {}).get("label", ""), "entity": labels.get(a, {}).get("entity", ""),
-                             "who": who(a, labels, rpcs) if (kind != "wallet" or a in labels) else short(a)})
+                row = {"side": side, "address": a, "reth": float(v), "share": float(v) / float(s.sum()),
+                       "peak_week_ending": panel["date"].iloc[int(per_week.idxmax())].date(),
+                       "peak_week_reth": float(per_week.max()), "kind": kind,
+                       "label": labels.get(a, {}).get("label", ""), "entity": labels.get(a, {}).get("entity", ""),
+                       "who": who(a, labels, rpcs) if (kind != "wallet" or a in labels) else short(a)}
+                if side == "burned":
+                    row.update(redeemer_source(mt, a, float(v), labels, rpcs))
+                rows.append(row)
         pd.DataFrame(rows, columns=["side", "address", "reth", "share", "peak_week_ending", "peak_week_reth",
-                                    "kind", "label", "entity", "who"]).to_csv(
+                                    "kind", "label", "entity", "who", "source", "source_name", "source_kind",
+                                    "source_share", "same_tx_share"]).to_csv(
             os.path.join(OUT_DIR, "holders_month_mint_burn.csv"), index=False)
         # the "Other addresses" bucket: which of its larger members are contracts (DEX pools, routers)
         others = m[(types.reindex(m.index) == "Other addresses").to_numpy() & (m["net"].abs() >= 50).to_numpy()]

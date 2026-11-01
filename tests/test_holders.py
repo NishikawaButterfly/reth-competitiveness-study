@@ -24,6 +24,7 @@ WHALE = "0x" + "a1" * 20          # holds 10,000; burns 4,000 and sells 2,000 in
 POOL = "0x" + "c2" * 20           # a contract holding 5,000 that redeems 4,000: net -2,000
 OTHER = "0x" + "e3" * 20          # holds 85,000 and never moves
 BIGW = "0x" + "b4" * 20           # an unlabelled wallet that gains 700: a "large wallet"
+ARB = "0x" + "d5" * 20            # an unlabelled contract that receives 30 and redeems it in the same transaction
 small = ["0x" + f"{i:040x}" for i in range(1, 60)]
 INIT = {WHALE: 10_000 * 10**18, POOL: 5_000 * 10**18, OTHER: 85_000 * 10**18}
 S0 = sum(INIT.values())
@@ -31,9 +32,12 @@ S0 = sum(INIT.values())
 # ---- synthetic chain: 10 weeks of 5,000 blocks -----------------------------------------
 week_blocks = [10_000 + 5_000 * k for k in range(11)]
 LOGS = []          # (block, log_index, from, to, wei)
+TXOF = {}          # (block, log_index) -> transaction hash, for logs that share a transaction
 
 
-def add(block, frm, to, amount):
+def add(block, frm, to, amount, tx=None):
+    if tx:
+        TXOF[(block, len(LOGS))] = tx
     LOGS.append((block, len(LOGS), frm, to, int(round(amount * 1e6)) * 10**12))
 
 
@@ -47,6 +51,8 @@ add(20_500, WHALE, ZERO, 4_000)                              # whale burns in we
 add(41_000, WHALE, POOL, 2_000)                              # whale sells into the pool in week 7
 add(41_200, POOL, ZERO, 4_000)                               # the pool redeems 4,000
 add(30_500, ZERO, BIGW, 700)                                 # a large unlabelled wallet mints 700
+add(42_000, OTHER, ARB, 30, tx="0x" + "ab" * 32)             # a contract receives 30 rETH from a wallet
+add(42_000, ARB, ZERO, 30, tx="0x" + "ab" * 32)              # ... and redeems it in the same transaction
 for _ in range(1_000):                                       # noise between small holders
     f, t = rng.choice(small, 2, replace=False)
     add(int(rng.integers(10_001, 60_000)), f, t, float(rng.uniform(0.01, 0.5)))
@@ -65,7 +71,7 @@ def balance_wei(addr, block):
 
 def rpc_log(entry):
     b, i, f, t, w = entry
-    return {"blockNumber": hex(b), "logIndex": hex(i), "transactionHash": "0x" + f"{b:08x}{i:056x}",
+    return {"blockNumber": hex(b), "logIndex": hex(i), "transactionHash": TXOF.get((b, i), "0x" + f"{b:08x}{i:056x}"),
             "topics": [TOPIC, "0x" + "0" * 24 + f[2:], "0x" + "0" * 24 + t[2:]], "data": "0x" + f"{w:064x}"}
 
 
@@ -101,7 +107,7 @@ class FakeRpc(holders.RpcSource):
                 return "0x" + f"{32:064x}{5:064x}" + b"TPOOL".ljust(32, b"\0").hex()
             raise RuntimeError("{'code': 3, 'message': 'execution reverted'}")
         if method == "eth_getCode":
-            return "0x6080" if params[0] == POOL else "0x"
+            return "0x6080" if params[0] in (POOL, ARB) else "0x"
         raise ValueError(method)
 
 
@@ -241,8 +247,18 @@ assert cpm.loc[POOL, "counterparty_kind"] == "reth" and "redeemed for ETH" in cp
 assert BIGW not in cpm.index                       # moved 700 rETH: under the 1,000 rETH threshold
 mb = pd.read_csv("reth_study/holders_month_mint_burn.csv")
 burn = mb[mb["side"] == "burned"].set_index("address")
-assert burn.index[0] == POOL and abs(burn.loc[POOL, "reth"] - 4_000) < 1e-6 and abs(burn.loc[POOL, "share"] - 1) < 1e-9
+assert burn.index[0] == POOL and abs(burn.loc[POOL, "reth"] - 4_000) < 1e-6
+assert abs(burn.loc[POOL, "share"] - 4_000 / 4_030) < 1e-9, burn.loc[POOL, "share"]
 assert burn.loc[POOL, "peak_week_ending"] == str(dates[7].date()) and burn.loc[POOL, "who"] == "Test pool"
+# where each redeemer's rETH came from: the pool got it from the whale earlier; the contract got it
+# from a wallet and redeemed it in the same transaction
+assert burn.loc[POOL, "source"] == WHALE and burn.loc[POOL, "source_name"] == "Test whale"
+assert burn.loc[POOL, "source_kind"] == "labelled" and abs(burn.loc[POOL, "source_share"] - 1) < 1e-9
+assert abs(burn.loc[POOL, "same_tx_share"]) < 1e-9
+assert abs(burn.loc[ARB, "reth"] - 30) < 1e-6 and burn.loc[ARB, "kind"] == "contract"
+assert burn.loc[ARB, "source"] == OTHER and burn.loc[ARB, "source_kind"] == "wallet"
+assert burn.loc[ARB, "source_name"].startswith("0xe3e3") and abs(burn.loc[ARB, "same_tx_share"] - 1) < 1e-9
+assert mb.loc[mb["side"] == "minted", "same_tx_share"].isna().all()
 mint = mb[mb["side"] == "minted"].set_index("address")
 assert mint.index[0] == BIGW and abs(mint.loc[BIGW, "reth"] - 700) < 1e-6 and mint.loc[BIGW, "who"].startswith("0xb4b4")
 ent2 = pd.read_csv("reth_study/holders_by_entity.csv", index_col=0)

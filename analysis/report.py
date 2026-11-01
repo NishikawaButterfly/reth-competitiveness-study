@@ -391,6 +391,7 @@ def main():
     # ---- 1. who moved ----
     lines += ["", "## 1. Who moved rETH", "", f"![rETH net change by holder type, {title_month}]({chart})", "",
               "| Holder type | Net change (rETH) | Addresses |", "| --- | ---: | ---: |"]
+    shown_types = []
     for c in cat.index:
         if c == TOTAL:
             continue
@@ -398,7 +399,11 @@ def main():
         n = cat.loc[c, "addresses_month"] if "addresses_month" in cat else np.nan
         if abs(v) > 1e-9:
             lines.append(f"| {TYPE_LABEL.get(c, c)} | {signed(v)} | {num(n)} |")
+            shown_types.append(v)
     lines.append(f"| **Total (= supply change)** | **{signed(cat.loc[TOTAL, 'net_month'])}** | |")
+    note = rounding_note(shown_types, cat.loc[TOTAL, "net_month"])
+    if note:
+        lines += ["", note]
     if others is not None and not others.empty and "Other addresses" in steps.index:
         k = others.groupby("kind")["net"].agg(["sum", "size"])
         parts = [f"{int(k.loc[x, 'size'])} {KIND_LABEL.get(x, x)}{'s' if k.loc[x, 'size'] != 1 else ''} "
@@ -441,11 +446,24 @@ def main():
                          f"{signed(r['net'])} | {b0} | {b1} | {flow} |")
 
     if not burns.empty:
-        lines += ["", "**Largest redemptions (rETH burned for ETH)**", "",
-                  "| Who | Burned | Share of the month's burns | Week with most burning |", "| --- | ---: | ---: | --- |"]
+        has_src = "same_tx_share" in burns.columns and burns["same_tx_share"].notna().any()
+        head = "| Who | Burned | Share of the month's burns | Week with most burning |"
+        rule = "| --- | ---: | ---: | --- |"
+        if has_src:
+            head += " Main source of its rETH | Burned on arrival |"
+            rule += " --- | ---: |"
+        lines += ["", "**Largest redemptions (rETH burned for ETH)**", "", head, rule]
         for _, b in burns.head(5).iterrows():
-            lines.append(f"| {burner_name(b)} | {num(b['reth'])} | {b['share']:.0%} | "
-                         f"{day(pd.Timestamp(b['peak_week_ending']))} ({num(b['peak_week_reth'])}) |")
+            row = (f"| {burner_name(b)} | {num(b['reth'])} | {b['share']:.0%} | "
+                   f"{day(pd.Timestamp(b['peak_week_ending']))} ({num(b['peak_week_reth'])}) |")
+            if has_src:
+                arrival = f"{b['same_tx_share']:.0%}" if pd.notna(b["same_tx_share"]) else "n/a"
+                row += f" {source_text(b)} | {arrival} |"
+            lines.append(row)
+        if has_src:
+            lines += ["", "Main source: the address that sent it the most rETH during the month. Burned on arrival: "
+                      "the share of what it burned that it received in the same transaction, as when rETH is bought "
+                      "on a market or routed from a seller and redeemed at once."]
         if not mints.empty:
             lines += ["", "Largest mints: " + ", ".join(f"{burner_name(b)} {num(b['reth'])}"
                                                         for _, b in mints.head(3).iterrows()) + "."]
@@ -576,6 +594,26 @@ def pct_text(v):
 
 def prev_months(n):
     return "previous month" if n == 1 else f"previous {n} months"
+
+
+def rounding_note(values, total):
+    """A note when the rows, as rounded in the table, do not add up to the rounded total."""
+    if sum(round(float(v)) for v in values) != round(float(total)):
+        return "Rows are rounded, so they may not add up exactly to the total."
+    return ""
+
+
+def source_text(b):
+    """The main sender of a redeemer's rETH: protocols by label, contracts by name, wallets by address only."""
+    c, name, kind = b.get("source"), b.get("source_name"), b.get("source_kind")
+    if not isinstance(c, str) or not c:
+        return "none this month"
+    share = f"{b['source_share']:.0%} from " if pd.notna(b.get("source_share")) else "from "
+    if kind == "labelled" and isinstance(name, str) and name:
+        return share + name
+    if kind == "contract" and isinstance(name, str) and name and not name.startswith("0x"):
+        return share + f"contract {name.split('->')[-1].strip()} ({etherscan(c)})"
+    return share + f"{'an unlabelled contract' if kind == 'contract' else 'a wallet'} {etherscan(c)}"
 
 
 def burner_name(b):
