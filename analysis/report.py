@@ -153,19 +153,31 @@ def yield_stats(panel, start, end):
     if s.empty or e.empty or inside.empty:
         return None
     reth, steth = apr_between(panel, s.iloc[0], e.iloc[0])
-    odd = []
+    odd, odd_dates = [], set()
     for col, name in (("reth_apr", "rETH"), ("steth_apr", "stETH")):
         med = inside[col].median()
         for _, w in inside[(inside[col] - med).abs() > 0.01].iterrows():
             odd.append(f"{name}'s weekly APR in the week to {day(w['date'])} was {w[col] * 100:.2f}%, against a "
                        f"monthly median of {med * 100:.2f}%")
-    prem = inside["premium_pct"] if "premium_pct" in inside else pd.Series(dtype=float)
-    return {"reth": reth, "steth": steth, "gap": (reth - steth) * 1e4,
+            odd_dates.add(w["date"])
+    gap_ex = np.nan
+    if odd_dates:  # the gap over the other weeks, chaining each token's weekly rate growth
+        win = panel[(panel["date"] >= start) & (panel["date"] <= end)].reset_index(drop=True)
+        g_r = g_s = 1.0
+        days = 0
+        for i in range(1, len(win)):
+            if win.loc[i, "date"] in odd_dates:
+                continue
+            g_r *= win.loc[i, "reth_rate"] / win.loc[i - 1, "reth_rate"]
+            g_s *= win.loc[i, "steth_rate"] / win.loc[i - 1, "steth_rate"]
+            days += (win.loc[i, "date"] - win.loc[i - 1, "date"]).days
+        if days:
+            gap_ex = (g_r ** (365 / days) - g_s ** (365 / days)) * 1e4
+    prem = inside["premium_pct"].dropna() if "premium_pct" in inside else pd.Series(dtype=float)
+    return {"reth": reth, "steth": steth, "gap": (reth - steth) * 1e4, "gap_ex": gap_ex,
             "weekly_gaps": ", ".join(signed(g) for g in inside["gap_bps"]),
             "weekly_reth": ", ".join(f"{v * 100:.2f}%" for v in inside["reth_apr"]),
-            "odd": odd, "prem_n": int(prem.notna().sum()), "prem_below": int((prem < 0).sum()),
-            "prem_min": prem.min() if prem.notna().any() else np.nan,
-            "prem_min_date": inside.loc[prem.idxmin(), "date"] if prem.notna().any() else None}
+            "odd": odd, "weekly_prem": ", ".join(f"{signed(v, 2)}%" for v in prem)}
 
 
 def flow_context(weeks, month):
@@ -346,7 +358,7 @@ def main():
                 f"{fc['peak_burned'] / fc['burned']:.0%} of the month's burns.")
         if not burns.empty:
             b = burns.iloc[0]
-            txt += f" The largest burner was {burner_name(b)} ({num(b['reth'])} rETH)."
+            txt += f" The largest burner was {in_sentence(burner_name(b))} ({num(b['reth'])} rETH)."
         lines.append(txt)
     dec = [f"{n} {signed(r['net_month'])}" for n, r in ent_m[ent_m["net_month"] < 0].head(3).iterrows()]
     if dec or "Other addresses" in steps.index:
@@ -362,14 +374,19 @@ def main():
     if lrows:
         lines.append(f"- **Lending:** rETH deposited on {' and '.join(r['venue'] for r in lrows)} went from "
                      f"{num(sum(r['reth_start'] for r in lrows))} to {num(sum(r['reth_end'] for r in lrows))}. "
-                     "Median weekly gap between the rETH and wstETH loop spreads: "
-                     + "; ".join(f"{r['venue']} {signed(r['gap'])} bps" for r in lrows) + ".")
+                     "Looping rETH paid a median " + " and ".join(f"{signed(r['reth_spread'])} bps on {r['venue']}"
+                                                                  for r in lrows)
+                     + f", {signed(lrows[0]['gap'])} bps against wstETH on the same markets (4-week average "
+                     "staking yields).")
     if ys:
         txt = (f"- **Yield:** rETH's APR over the month was {ys['reth'] * 100:.2f}% and stETH's "
                f"{ys['steth'] * 100:.2f}%, a gap of {signed(ys['gap'])} bps")
         if gaps_before:
             txt += " (" + ", ".join(f"{m} {signed(g)}" for m, g in gaps_before) + " bps in the months before)"
-        lines.append(txt + "." + (" One week stands out; see sections 2 and 4." if ys["odd"] else ""))
+        if ys["odd"] and pd.notna(ys["gap_ex"]):
+            txt += (f". Without the week flagged in section 4 the gap was {signed(ys['gap_ex'])} bps; "
+                    "section 2 explains that week")
+        lines.append(txt + ".")
 
     # ---- 1. who moved ----
     lines += ["", "## 1. Who moved rETH", "", f"![rETH net change by holder type, {title_month}]({chart})", "",
@@ -407,7 +424,7 @@ def main():
             if has_bal and pd.notna(r["balance_month_start"]) and pd.notna(r["balance_month_end"]):
                 hold = f"{num(r['balance_month_start'])} → {num(r['balance_month_end'])}"
                 if r["balance_month_start"] > 0:
-                    pct = f"{signed((r['balance_month_end'] / r['balance_month_start'] - 1) * 100)}%"
+                    pct = pct_text((r["balance_month_end"] / r["balance_month_start"] - 1) * 100)
             lines.append(f"| {name} | {r['category']} | {signed(r['net_month'])} | {hold} | {pct} | "
                          f"{signed(r.get('net_since_saturn1', np.nan))} | {signed(r.get('net_since_2024', np.nan))} |")
 
@@ -460,13 +477,14 @@ def main():
                   "aToken supply, which includes any rETH lent out, so they can sit slightly above the rETH "
                   "balance in section 1."]
         for r in lrows:
-            if r["worst_reth"] < 0:
-                lines.append(f"In the week to {day(r['worst_date'])}, {r['venue']}'s WETH borrow rate was "
-                             f"{r['worst_borrow'] * 100:.2f}%, so loops paid {signed(r['worst_reth'])} bps on rETH and "
-                             f"{signed(r['worst_wsteth'])} bps on wstETH.")
+            if r["worst_reth"] < -25:
+                lines += ["", f"At the {day(r['worst_date'])} snapshot, {r['venue']}'s WETH borrow rate was "
+                          f"{r['worst_borrow'] * 100:.2f}%; at that rate loops would pay {signed(r['worst_reth'])} bps "
+                          f"on rETH and {signed(r['worst_wsteth'])} bps on wstETH. The rate is read at one block, "
+                          "not averaged over the week."]
         stale = [r["venue"] for r in lrows if r["end_date"] < end]
         if stale:
-            lines.append(f"Lending data for {', '.join(stale)} ends before {day(end)}; the latest week is shown.")
+            lines += ["", f"Lending data for {', '.join(stale)} ends before {day(end)}; the latest week is shown."]
 
     # ---- 4. supply and yield ----
     lines += ["", "## 4. Supply and yield", "", "| Measure | Value |", "| --- | --- |",
@@ -480,16 +498,16 @@ def main():
     if ys:
         lines += [f"| rETH APR over the month, from its exchange rate | {ys['reth'] * 100:.2f}% |",
                   f"| stETH APR over the month, from its exchange rate | {ys['steth'] * 100:.2f}% |",
-                  f"| Gap, rETH − stETH | {signed(ys['gap'])} bps |",
+                  f"| Gap, rETH − stETH | {signed(ys['gap'])} bps |"
+                  + ("" if pd.isna(ys["gap_ex"]) else f"\n| Gap without the flagged week | {signed(ys['gap_ex'])} bps |"),
                   f"| rETH weekly APR, in order | {ys['weekly_reth']} |",
                   f"| Weekly gaps, in order (bps) | {ys['weekly_gaps']} |"]
         if gaps_before:
             lines.append("| Gap in the months before (bps) | "
                          + ", ".join(f"{m} {signed(g)}" for m, g in gaps_before) + " |")
-        if ys["prem_n"]:
-            lines.append(f"| rETH market price below its protocol rate | {ys['prem_below']} of {ys['prem_n']} weekly "
-                         f"price snapshots; lowest {signed(ys['prem_min'], 2)}% "
-                         f"(week to {day(ys['prem_min_date'])}) |")
+        if ys["weekly_prem"]:
+            lines.append(f"| rETH market price vs protocol rate, weekly snapshots (DefiLlama prices) | "
+                         f"{ys['weekly_prem']} |")
         if ys["odd"]:
             lines += ["", "Check before reading the gap: " + "; ".join(ys["odd"]) + ". Weekly rates move with oracle "
                       "timing and one-off events, and a week like this also moves the monthly figure."]
@@ -541,6 +559,19 @@ def main():
         f.write("\n".join(lines) + "\n")
     print(f"Wrote {path}")
     return path
+
+
+def in_sentence(name):
+    """'Unlabelled contract X' -> 'an unlabelled contract X'; 'Contract X' -> 'contract X'."""
+    if name.startswith("Unlabelled "):
+        return "an unlabelled " + name[len("Unlabelled "):]
+    if name.startswith("Contract "):
+        return "contract " + name[len("Contract "):]
+    return name
+
+
+def pct_text(v):
+    return f"{signed(v, 1)}%" if abs(v) < 10 else f"{signed(v)}%"
 
 
 def prev_months(n):

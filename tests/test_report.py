@@ -108,19 +108,22 @@ assert "The ETH backing rETH changed by" in md and "and stETH's by" in md
 assert ("5,000 rETH burned for ETH and 1,000 minted in 4 weeks, or 1,250 and 250 a week, against 100 and 767 a week "
         "over the previous month") in md, md
 assert "The week to 17 February 2024 burned 3,500 rETH, 70% of the month's burns." in md
-assert "The largest burner was Contract ArbBot ([0x777777…777777]" in md
+assert "The largest burner was contract ArbBot ([0x777777…777777]" in md
 assert (f"- **Largest net decreases:** Spark {M}3,000 (identified protocols and treasuries); other addresses, "
         f"each moving under 500 rETH, {M}300 in total.") in md, md
 assert "- **Wallet-to-wallet transfers:** 1 transfer moved 1,500 rETH to new addresses" in md
-assert f"Median weekly gap between the rETH and wstETH loop spreads: Aave v3 {M}24 bps; Spark {M}30 bps." in md, md
+assert (f"Looping rETH paid a median +16 bps on Aave v3 and +20 bps on Spark, {M}24 bps against wstETH on the same "
+        "markets (4-week average staking yields).") in md, md
 assert "rETH's APR over the month was 2.70% and stETH's 3.00%, a gap of " + M + "30 bps" in md, md
-assert "One week stands out; see sections 2 and 4." in md
+assert f"Without the week flagged in section 4 the gap was {M}30 bps; section 2 explains that week." in md, md
+assert f"| Gap without the flagged week | {M}30 bps |" in md
 # section 1
 assert f"| Lending and CDPs | {M}3,000 | 2 |" in md and f"| **Total (= supply change)** | **{M}4,000** | |" in md
 assert "| Other addresses (each moved under 500 rETH) | " + M + "300 | 400 |" in md
 assert (f"those that moved 50 rETH or more were 2 wallets ({M}120), 1 contract ({M}60); everyone else came to "
         f"{M}120. Largest contracts: UniswapV3Pool") in md, md
 assert f"| Spark | Lending and CDPs | {M}3,000 | 5,000 → 2,000 | {M}60% | {M}500 | {M}1,000 |" in md, md
+assert "Aave v3's WETH borrow rate" not in md                       # mildly negative weeks are not flagged
 assert "| Balancer | DEX liquidity | +500 | 100 → 600 | +500% | 0 | +400 |" in md, md
 assert "Aave v3 | Lending and CDPs" not in md                      # moved under 10 rETH: not listed
 assert "Spark spRETH ([0x111111…111111](https://etherscan.io/address/" + SPARK + "))" in md
@@ -136,12 +139,13 @@ assert "Largest mints: Unlabelled wallet [0x444444…444444]" in md
 assert "Not yet written." in md
 # section 3
 assert f"| Spark | 5,000 → 2,000 | 2.0% | 33,000 → 37,000 | +20 bps | +50 bps | {M}30 bps |" in md, md
-assert f"In the week to 24 February 2024, Spark's WETH borrow rate was 4.50%, so loops paid {M}150 bps on rETH" in md
+assert (f"At the 24 February 2024 snapshot, Spark's WETH borrow rate was 4.50%; at that rate loops would pay "
+        f"{M}150 bps on rETH") in md
 # section 4
 assert f"| Weekly gaps, in order (bps) | {M}30, {M}30, {M}30, {M}230 |" in md
 assert "| Gap in the months before (bps) | Jan " in md
-assert (f"| rETH market price below its protocol rate | 3 of 4 weekly price snapshots; lowest {M}0.31% "
-        "(week to 17 February 2024) |") in md, md
+assert (f"| rETH market price vs protocol rate, weekly snapshots (DefiLlama prices) | {M}0.20%, +0.05%, "
+        f"{M}0.31%, {M}0.10% |") in md, md
 assert "stETH's weekly APR in the week to 24 February 2024 was 5.00%" in md
 # section 5 and checks
 assert (f"From 6 January 2024 to 24 February 2024, rETH supply changed by {M}7,000; protocol positions account "

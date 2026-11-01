@@ -23,3 +23,10 @@ address,label,entity,category,evidence
 0xcafeaf6ea90cb931ae43a8cf4b25a73a24cf6158,Nexus Mutual capital pool (interim),Nexus Mutual,Funds and DAO treasuries,Contract Pool at the same 0xcafea prefix; received the old pool's 13358 rETH in one transfer
 0x2570f1bd5d2735314fc102eb12fc1afe9e6e7193,TryLSD liquidity pool,TryLSD pool,DEX liquidity,Token symbol TryLSD on-chain
 0x062bf725dc4cdf947aa79ca2aaccd4f385b13b5c,Alchemix alETH (rETH collateral),Alchemix,Lending and CDPs,debtToken() = alETH on-chain
+0x03ab03da2c5012855c743bc318c19ef3de5bc906,Radiant rrETH (rETH market),Radiant,Lending and CDPs,Token symbol rrETH and name 'Radiant interest bearing rETH' read on-chain
+0x87269b23e73305117d0404557badc459ced0dbec,L1_ERC20_Bridge (an L2 token bridge),Other L2 bridges,L2 bridges,Verified contract name L1_ERC20_Bridge (Blockscout/Sourcify)
+0x57891966931eb4bb6fb81430e6ce0a03aabde063,L1ERC20Bridge (an L2 token bridge),Other L2 bridges,L2 bridges,Proxy whose verified implementation is L1ERC20Bridge (Blockscout/Sourcify)
+0x553e9c493678d8606d6a5ba284643db2110df823,rETH/WETH pool (0x553e9c),rETH/WETH DEX pools,DEX liquidity,token0/token1 = rETH/WETH read on-chain; listed as the rETH/WETH pair on DEXTools and DexPaprika
+0xa4e0faa58465a2d369aa21b3e42d43374c6f9613,rETH/WETH pool (0xa4e0fa),rETH/WETH DEX pools,DEX liquidity,token0/token1 = rETH/WETH read on-chain; listed as an rETH/WETH pool on DexPaprika
+0x000000000004444c5dc75cb358380d2e3de08a90,Uniswap v4 PoolManager,Uniswap v4,DEX liquidity,Verified contract name PoolManager at Uniswap v4's mainnet PoolManager address; it holds the tokens of every v4 pool
+0xe080027bd47353b5d1639772b4a75e9ed3658a0d,osETH/rETH pool,osETH/rETH pool,DEX liquidity,Pool token named osETH/rETH (symbol osETH-rETH) read on-chain; listed as a pool on DexPaprika
