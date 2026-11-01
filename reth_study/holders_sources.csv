@@ -23,7 +23,7 @@ api.zan.top/eth-mainnet,rpc,False,True,0,,,,False
 eth.merkle.io,rpc,False,False,0,,,RateLimited: HTTP 429,False
 rpc.polysplit.cloud/v1/chain/1,rpc,False,False,0,,,"ConnectTimeout: HTTPSConnectionPool(host='ww38.polysplit.cloud', port=443): Max retries exceeded with url: /v1/chain/1 (Caused by ConnectTimeoutError(<HTTPSConnection(host='ww3",False
 ethereum-mainnet.gateway.tatum.io,rpc,False,True,0,,,,False
-public-eth.nownodes.io,rpc,False,False,0,,,RateLimited: HTTP 429,False
+public-eth.nownodes.io,rpc,False,True,0,,,,False
 eth.blockrazor.xyz,rpc,False,True,0,,,,False
 0xrpc.io/eth,rpc,False,True,0,,,,False
 eth.api.onfinality.io/public,rpc,False,False,0,,,RateLimited: HTTP 429,False
@@ -61,7 +61,7 @@ services.tokenview.io/vipapi/nodeservice/eth,rpc,False,False,0,,,RateLimited: HT
 eth.blockrazor.xyz/fullprivacy,rpc,False,True,0,,,,False
 eth.blockrazor.xyz/maxbackrun,rpc,False,True,0,,,,False
 rpc.owlracle.info/eth/...,rpc,False,False,0,,,"RuntimeError: HTTP 401: {""error"":true,""code"":401,""message"":""Origin mismatch""}",False
-api-ethereum-mainnet-reth.n.dwellir.com/...,rpc,False,False,0,,,RateLimited: HTTP 429,False
+api-ethereum-mainnet-reth.n.dwellir.com/...,rpc,False,True,0,,,,False
 rpc.driftguard.live/eth,rpc,False,False,0,,,"RuntimeError: HTTP 502: <!DOCTYPE html>
 <!--[if lt IE 7]> <html class=""no-js ie6 oldie"" lang=""en-US""> <![endif]-->
 <!--[if IE 7]>    <html class",False
