@@ -897,6 +897,32 @@ def main():
         movers["kind"] = [kind_of(a, rpcs) for a in movers.index]
         movers["who"] = [who(a, labels, rpcs) for a in movers.index]
         movers.to_csv(os.path.join(OUT_DIR, "holders_month_movers.csv"))
+        # where each large mover's rETH went (or came from): the three largest counterparties
+        focus = movers[movers["net"].abs() >= MOVER]
+        if focus.empty:  # a quiet month: the three largest moves each way, as the report shows them
+            focus = pd.concat([movers.nsmallest(3, "net"), movers.nlargest(3, "net")])
+        rows = []
+        for a, r in focus.iterrows():
+            out = r["net"] < 0
+            leg = mt[(mt["from"] == a) & (mt["to"] != a)] if out else mt[(mt["to"] == a) & (mt["from"] != a)]
+            total = float(leg["amount"].sum())
+            if not total:
+                continue
+            for c, v in leg.groupby("to" if out else "from")["amount"].sum().nlargest(3).items():
+                if c == ZERO:
+                    name, kind = ("rETH contract (burned: redeemed for ETH)" if out
+                                  else "rETH contract (minted: ETH deposited)"), "reth"
+                elif labels.get(c, {}).get("label"):
+                    name, kind = labels[c]["label"], "labelled"
+                else:
+                    info = address_info(c, rpcs)
+                    name, kind = (display_name(info, c), "contract") if info.get("is_contract") else (short(c), "wallet")
+                rows.append({"address": a, "direction": "sent to" if out else "received from", "counterparty": c,
+                             "counterparty_name": name, "counterparty_kind": kind, "reth": float(v),
+                             "share": float(v) / total})
+        pd.DataFrame(rows, columns=["address", "direction", "counterparty", "counterparty_name",
+                                    "counterparty_kind", "reth", "share"]).to_csv(
+            os.path.join(OUT_DIR, "holders_month_counterparties.csv"), index=False)
         dbg(f"Report month {month}: {len(ks)} weeks, supply change {sup[k1] - sup[k0]:+,.1f} rETH, "
             f"{int((m['net'].abs() >= MOVER).sum())} addresses moved {MOVER:,.0f}+ rETH")
     big = pd.DataFrame({"net_since_2024": net["net"], "net_since_saturn1": net_s1["net"]}).fillna(0)

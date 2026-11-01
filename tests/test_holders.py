@@ -234,6 +234,11 @@ assert abs(mv.loc[WHALE, "net"] + 2_000) < 1e-6 and abs(mv.loc[BIGW, "net"] - 70
 assert abs(mv.loc[WHALE, "balance_start"] - 6_000) < 1e-6 and abs(mv.loc[WHALE, "balance_end"] - 4_000) < 1e-6
 assert mv.loc[BIGW, "holder_type"] == "Large wallets" and mv.loc[BIGW, "kind"] == "wallet"
 assert mv.loc[POOL, "entity"] == "Test DEX" and mv.loc[[WHALE, POOL, BIGW], "balance_check"].all()
+cpm = pd.read_csv("reth_study/holders_month_counterparties.csv").set_index("address")
+assert cpm.loc[WHALE, "direction"] == "sent to" and cpm.loc[WHALE, "counterparty_name"] == "Test pool"
+assert abs(cpm.loc[WHALE, "reth"] - 2_000) < 1e-6 and abs(cpm.loc[WHALE, "share"] - 1) < 1e-9
+assert cpm.loc[POOL, "counterparty_kind"] == "reth" and "redeemed for ETH" in cpm.loc[POOL, "counterparty_name"]
+assert BIGW not in cpm.index                       # moved 700 rETH: under the 1,000 rETH threshold
 calls_first = sum(s.log_calls for s in SOURCES)
 
 # rerun: every week comes from the cache, no log requests at all

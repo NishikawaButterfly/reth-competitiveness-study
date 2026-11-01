@@ -63,6 +63,24 @@ def mover_name(addr, r):
     return f"Unlabelled {KIND_LABEL.get(kind, 'address')} {etherscan(addr)}"
 
 
+def main_flow(addr, cp):
+    """The largest counterparty of a mover in the month, e.g. '100% sent to Balancer V2 Vault'."""
+    if cp is None:
+        return ""
+    rows = cp[cp["address"] == addr]
+    if rows.empty:
+        return ""
+    r = rows.sort_values("reth", ascending=False).iloc[0]
+    kind = r["counterparty_kind"]
+    if kind == "wallet":
+        name = f"a wallet {etherscan(r['counterparty'])}"
+    elif kind == "contract":
+        name = f"contract {r['counterparty_name']} ({etherscan(r['counterparty'])})"
+    else:
+        name = r["counterparty_name"]
+    return f"{r['share']:.0%} {r['direction']} {name}"
+
+
 def waterfall(steps, path, title, subtitle):
     """Net change by holder type: protocol types first with a subtotal, then the rest, then the total."""
     import matplotlib
@@ -143,6 +161,7 @@ def main():
     cat = read("holders_by_category.csv", index_col=0)
     ent = read("holders_by_entity.csv", index_col=0)
     movers = read("holders_month_movers.csv", index_col=0)
+    cp = read("holders_month_counterparties.csv")
     weeks = read("holders_weeks.csv")
     panel = read("weekly_panel.csv")
     lend = read("lending_panel.csv")
@@ -239,13 +258,13 @@ def main():
     if movers is not None:
         lines += ["", f"**Every address that moved {num(MOVER)} rETH or more**" if not big.empty
                   else f"**No address moved {num(MOVER)} rETH or more; the largest moves were:**", "",
-                  "| Who | Holder type | Net change | Balance at start | Balance at end |",
-                  "| --- | --- | ---: | ---: | ---: |"]
+                  "| Who | Holder type | Net change | Balance at start | Balance at end | Main counterparty |",
+                  "| --- | --- | ---: | ---: | ---: | --- |"]
         for a, r in shown.sort_values("net").iterrows():
             b0 = num(r["balance_start"]) if "balance_start" in r and pd.notna(r["balance_start"]) else "n/a"
             b1 = num(r["balance_end"]) if "balance_end" in r and pd.notna(r["balance_end"]) else "n/a"
             lines.append(f"| {mover_name(a, r)} | {TYPE_LABEL.get(r['holder_type'], r['holder_type'])} | "
-                         f"{signed(r['net'])} | {b0} | {b1} |")
+                         f"{signed(r['net'])} | {b0} | {b1} | {main_flow(a, cp)} |")
 
     # ---- 3. lending ----
     if lrows:
@@ -273,17 +292,19 @@ def main():
         lines.append("Not yet written. The reasons behind these moves still need checking:")
         lines.append("")
         for a, r in shown.sort_values("net").iterrows():
-            lines.append(f"- {mover_name(a, r)}: {signed(r['net'])} rETH.")
+            flow = main_flow(a, cp)
+            lines.append(f"- {mover_name(a, r)}: {signed(r['net'])} rETH" + (f"; {flow}." if flow else "."))
 
     # ---- 5. context ----
     lines += ["", "## 5. Context", ""]
+    upto = day(panel["date"].max())
     if "net_since_2024" in cat:
         tot = cat.loc[TOTAL, "net_since_2024"]
         p = cat.loc[[c for c in PROTOCOL_TYPES if c in cat.index], "net_since_2024"].sum()
-        lines.append(f"- Since January 2024, rETH supply changed by {signed(tot)}; protocol positions explain "
-                     f"{p / tot:.0%} of it.")
+        lines.append(f"- From January 2024 to {upto}, rETH supply changed by {signed(tot)}; protocol positions "
+                     f"explain {p / tot:.0%} of it.")
     if "net_since_saturn1" in cat:
-        lines.append(f"- Since Saturn 1 (18 February 2026): {signed(cat.loc[TOTAL, 'net_since_saturn1'])} rETH.")
+        lines.append(f"- From Saturn 1 (18 February 2026) to {upto}: {signed(cat.loc[TOTAL, 'net_since_saturn1'])} rETH.")
 
     # ---- checks and files ----
     ok = None

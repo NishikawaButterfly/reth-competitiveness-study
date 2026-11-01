@@ -48,6 +48,14 @@ pd.DataFrame({"net": [-3_000, -1_200, 500], "label": ["Spark spRETH", "", "Balan
               "kind": ["contract", "wallet", "contract"], "who": ["Spark spRETH", "someone.eth", "Balancer V2 Vault"],
               "ens": ["", "someone.eth", ""], "balance_start": [5_000, 1_200, 100], "balance_end": [2_000, 0, 600]},
              index=pd.Index([SPARK, WALLET, BAL], name="address")).to_csv("reth_study/holders_month_movers.csv")
+FRIEND = "0x" + "44" * 20
+pd.DataFrame({"address": [SPARK, WALLET, WALLET],
+              "direction": ["sent to", "sent to", "sent to"],
+              "counterparty": [WALLET, "0x" + "00" * 20, FRIEND],
+              "counterparty_name": ["0x2222...2222", "rETH contract (burned: redeemed for ETH)", "friend.eth"],
+              "counterparty_kind": ["wallet", "reth", "wallet"],
+              "reth": [3_000, 1_100, 100], "share": [1.0, 1_100 / 1_200, 100 / 1_200]}).to_csv(
+    "reth_study/holders_month_counterparties.csv", index=False)
 rows = []
 for d, i in zip(dates, range(8)):
     rows.append({"date": d, "venue": "Aave v3", "reth_supplied": 8_000 + 10 * i, "wsteth_supplied": 50_000,
@@ -71,6 +79,9 @@ assert "Aave v3 | Lending and CDPs" not in md                      # moved under
 assert "largest decreases: Lending and CDPs −3,000" in md       # names keep their capitals
 assert "Spark spRETH ([0x1111…1111](https://etherscan.io/address/" + SPARK + "))" in md
 assert "Unlabelled wallet [0x2222…2222]" in md and "someone.eth" not in md   # wallets by address only
+assert "| 100% sent to a wallet [0x2222…2222](https://etherscan.io/address/" + WALLET + ") |" in md
+assert "| 92% sent to rETH contract (burned: redeemed for ETH) |" in md and "friend.eth" not in md
+assert "From January 2024 to 24 February 2024, rETH supply changed by −7,000" in md
 assert "| Spark | 5,000 → 2,000 | 2.0% | 33,000 → 37,000 | 20 bps | 50 bps |" in md, md
 assert "All 4 weeks reconcile exactly" in md
 assert "Not yet written." in md and "Protocol positions together: −2,500 rETH" in md
