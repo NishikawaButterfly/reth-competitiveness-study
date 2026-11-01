@@ -44,6 +44,8 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 | `reth_study/holders_by_entity.csv` | Net change per identified protocol or treasury, since January 2024 and since Saturn 1 |
 | `reth_study/holders_*.csv` (other) | Top leavers and gainers with balances at both ends, concentration, where the top leavers sent their rETH, worst weeks, unlabelled large addresses, and how each week was fetched and checked ([`analysis/holders.py`](analysis/holders.py)) |
 | `analysis/labels.csv` | Who each identified address is, and the evidence for it |
+| `reth_study/holders_month*.csv` | The last complete month: its window and supply change, and every address that moved 1,000 rETH or more, with balances at both ends |
+| `reports/<YYYY-MM>.md` | The monthly rETH Demand Monitor report, with its chart ([`analysis/report.py`](analysis/report.py)). The section on why large moves happened is written by hand in `reports/notes/` |
 | `reth_study/lending_*.csv` | rETH and wstETH supplied on Aave v3 and Spark, the WETH borrow rate, the looping spread, and whether supply follows it ([`analysis/lending.py`](analysis/lending.py)) |
 | `reth_study/chart_*.png` | Charts |
 | `results/reth_study_v2_executed.ipynb` | The notebook as last executed, with outputs |
@@ -53,6 +55,8 @@ The notebook [`reth_study_v2.ipynb`](reth_study_v2.ipynb) runs seven steps:
 - **GitHub Actions** ([`.github/workflows/study.yml`](.github/workflows/study.yml)) first runs the offline test, then executes the notebook on live data and commits the results. It runs on every change, on demand, and every Sunday to add the new week.
 - **Archive node:** the notebook tries free public endpoints first. If none serves old blocks, add a free Alchemy key as the repository secret `ALCHEMY_KEY`.
 - **Holder analysis** ([`.github/workflows/holders.yml`](.github/workflows/holders.yml)) runs separately: on changes to `analysis/`, on demand and monthly. It probes about 40 public Ethereum endpoints, downloads every rETH transfer week by week from those that answer, and accepts a week only if its mints minus burns equal the supply change in the weekly panel. A free `ETHERSCAN_KEY` secret is an optional fallback.
+- **Lending analysis** ([`.github/workflows/lending.yml`](.github/workflows/lending.yml)) runs on the 3rd of each month.
+- **Monthly report** ([`.github/workflows/report.yml`](.github/workflows/report.yml)) runs after both, on the 3rd of each month, and writes `reports/<YYYY-MM>.md` for the last complete month. Committing a note to `reports/notes/<YYYY-MM>.md` rebuilds the report with it.
 - **Run it yourself:** open the notebook in Google Colab and choose *Run all*, or locally:
 
 ```bash
@@ -62,11 +66,13 @@ jupyter nbconvert --to notebook --execute reth_study_v2.ipynb --output-dir resul
 
 ## Test
 
-`tests/test_notebook_v2.py` runs the whole notebook offline against a synthetic market in which flows respond to the yield gap with a known slope. It passes only if the regression recovers that slope. `tests/test_holders.py` runs the holder analysis against a synthetic history with a known answer, served by fake sources that limit ranges, cap results, drop data silently or fail.
+`tests/test_notebook_v2.py` runs the whole notebook offline against a synthetic market in which flows respond to the yield gap with a known slope. It passes only if the regression recovers that slope. `tests/test_holders.py` runs the holder analysis against a synthetic history with a known answer, served by fake sources that limit ranges, cap results, drop data silently or fail. `tests/test_lending.py` checks that the lending regression recovers a known slope, and `tests/test_report.py` checks the monthly report against outputs with known numbers.
 
 ```bash
 python tests/test_notebook_v2.py
 python tests/test_holders.py
+python tests/test_lending.py
+python tests/test_report.py
 ```
 
 ## Context

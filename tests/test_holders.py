@@ -215,6 +215,25 @@ assert {WHALE, POOL} <= set(s1.index) and abs(s1.loc[POOL, "net"] + 2_000) < 1e-
 worst = pd.read_csv("reth_study/holders_worst_weeks.csv")
 assert WHALE in set(worst["address"])
 assert os.path.exists("reth_study/chart_top_leavers.png")
+
+# report month: the last week ends 16 March, so March is incomplete and the month is February
+# (weeks ending 3 to 24 February: blocks 25,001 to 45,000)
+assert str(holders.report_month(pd.Series(pd.to_datetime(["2026-10-24"], utc=True)))) == "2026-09"
+assert str(holders.report_month(pd.Series(pd.to_datetime(["2026-10-31"], utc=True)))) == "2026-10"
+mon = pd.read_csv("reth_study/holders_month.csv").iloc[0]
+assert mon["month"] == "2024-02" and int(mon["weeks"]) == 4, mon
+assert int(mon["block_from"]) == 25_001 and int(mon["block_to"]) == 45_000, mon
+assert abs(mon["supply_change"] - (supply[7] - supply[3])) < 1e-6
+assert abs(cat.loc["Total (= supply change)", "net_month"] - (supply[7] - supply[3])) < 1e-6
+assert abs(cat.loc["DEX liquidity", "net_month"] + 2_000) < 1e-6
+assert abs(cat.loc["Large wallets", "net_month"] - (-2_000 + 700)) < 1e-6, cat
+assert abs(ent.loc["Test DEX", "net_month"] + 2_000) < 1e-6
+mv = pd.read_csv("reth_study/holders_month_movers.csv", index_col=0)
+assert {WHALE, POOL, BIGW} <= set(mv.index), mv.index
+assert abs(mv.loc[WHALE, "net"] + 2_000) < 1e-6 and abs(mv.loc[BIGW, "net"] - 700) < 1e-6
+assert abs(mv.loc[WHALE, "balance_start"] - 6_000) < 1e-6 and abs(mv.loc[WHALE, "balance_end"] - 4_000) < 1e-6
+assert mv.loc[BIGW, "holder_type"] == "Large wallets" and mv.loc[BIGW, "kind"] == "wallet"
+assert mv.loc[POOL, "entity"] == "Test DEX" and mv.loc[[WHALE, POOL, BIGW], "balance_check"].all()
 calls_first = sum(s.log_calls for s in SOURCES)
 
 # rerun: every week comes from the cache, no log requests at all

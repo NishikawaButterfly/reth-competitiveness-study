@@ -10,8 +10,11 @@ on:
       - "analysis/**"
       - "tests/test_holders.py"
       - "tests/test_lending.py"
+      - "tests/test_report.py"
+      - "reports/**"
       - ".github/workflows/holders.yml"
       - ".github/workflows/lending.yml"
+      - ".github/workflows/report.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 0"   # Sundays 06:17 UTC: add the new week

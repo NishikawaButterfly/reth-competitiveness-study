@@ -673,6 +673,7 @@ def enrich(df, labels, rpcs, archive, b_start, b_end):
 
 
 BIG = 500.0  # rETH: an unlabelled address that moved at least this much is shown on its own
+MOVER = 1_000.0  # rETH: every address that moved at least this much in the report month is listed
 CATEGORY_ORDER = ["Restaking", "Lending and CDPs", "DEX liquidity", "L2 bridges", "Funds and DAO treasuries",
                   "Large wallets", "Unidentified contracts", "Other addresses"]
 
@@ -768,6 +769,17 @@ def short(a):
     return a[:6] + "..." + a[-4:]
 
 
+def report_month(dates):
+    """The latest calendar month the weekly panel covers in full. Weeks are assigned to the
+    month of their end date; the month of the last week is complete only if the next week
+    would end in a new month."""
+    last = dates.iloc[-1].tz_convert(None)
+    month = last.to_period("M")
+    if (last + pd.Timedelta(days=7)).to_period("M") == month:
+        month = month - 1
+    return month
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     panel = pd.read_csv(os.path.join(OUT_DIR, "weekly_panel.csv"))
@@ -824,7 +836,11 @@ def main():
         raise RuntimeError("Transfer totals do not match the supply change: stop and review.")
     s_idx = int(np.argmax(panel["date"] >= pd.Timestamp(SATURN1, tz="UTC")))
     net_s1 = net_by_address(tr[tr["week"] > s_idx])
-    w_all = f"{panel['date'].iloc[0].date()} to {panel['date'].iloc[-1].date()}"
+    month = report_month(panel["date"])
+    in_month = (panel["date"].dt.tz_convert(None).dt.to_period("M") == month).to_numpy()
+    ks = [k for k in range(1, len(panel)) if in_month[k]]
+    net_m = net_by_address(tr[tr["week"].isin(ks)]) if ks else None
+    w_all =f"{panel['date'].iloc[0].date()} to {panel['date'].iloc[-1].date()}"
     w_s1 = f"Saturn 1: {panel['date'].iloc[s_idx].date()} to {panel['date'].iloc[-1].date()}"
     conc = concentration(net, w_all)
     conc_s1 = concentration(net_s1, w_s1)
@@ -846,13 +862,43 @@ def main():
     top_s1.insert(5, "share_of_total_decrease", -top_s1["net"] / conc_s1["total_decrease_reth"])
     top_s1.to_csv(os.path.join(OUT_DIR, "holders_top_leavers_since_saturn1.csv"))
     nets = {"since_2024": net, "since_saturn1": net_s1}
+    changes = {"since_2024": sup[-1] - sup[0], "since_saturn1": sup[-1] - sup[s_idx]}
+    if ks:
+        nets["month"] = net_m
+        changes["month"] = sup[ks[-1]] - sup[ks[0] - 1]
     dec = decompose(nets, labels, rpcs)
-    for name, change in (("since_2024", sup[-1] - sup[0]), ("since_saturn1", sup[-1] - sup[s_idx])):
+    for name, change in changes.items():
         if abs(dec.loc["Total (= supply change)", f"net_{name}"] - change) > 1e-4:
             raise RuntimeError("Holder types do not add up to the supply change: stop and review.")
     dec.to_csv(os.path.join(OUT_DIR, "holders_by_category.csv"))
     if labels:
         by_entity(nets, labels).to_csv(os.path.join(OUT_DIR, "holders_by_entity.csv"))
+
+    # 4b. The report month: its window, and every address that moved at least MOVER rETH
+    if ks:
+        k0, k1 = ks[0] - 1, ks[-1]
+        mt = tr[tr["week"].isin(ks)]
+        pd.DataFrame([{"month": str(month), "start_snapshot": panel["date"].iloc[k0].date(),
+                       "end_snapshot": panel["date"].iloc[k1].date(), "weeks": len(ks),
+                       "block_from": int(blk[k0]) + 1, "block_to": int(blk[k1]),
+                       "supply_start": float(sup[k0]), "supply_end": float(sup[k1]),
+                       "supply_change": float(sup[k1] - sup[k0]), "transfers": len(mt),
+                       "minted": float(mt.loc[mt["from"] == ZERO, "amount"].sum()),
+                       "burned": float(mt.loc[mt["to"] == ZERO, "amount"].sum())}]).to_csv(
+            os.path.join(OUT_DIR, "holders_month.csv"), index=False)
+        m = net_m[net_m.index != ZERO]
+        pick = set(m.index[m["net"].abs() >= MOVER]) | set(m.nsmallest(10, "net").index) \
+            | set(m.nlargest(10, "net").index)
+        movers = enrich(m.loc[sorted(pick, key=lambda a: m.loc[a, "net"])], labels, rpcs, archive,
+                        int(blk[k0]), int(blk[k1]))
+        types = categorize(net_m, labels, rpcs)
+        movers["entity"] = [labels.get(a, {}).get("entity", "") for a in movers.index]
+        movers["holder_type"] = [types.get(a, "Other addresses") for a in movers.index]
+        movers["kind"] = [kind_of(a, rpcs) for a in movers.index]
+        movers["who"] = [who(a, labels, rpcs) for a in movers.index]
+        movers.to_csv(os.path.join(OUT_DIR, "holders_month_movers.csv"))
+        dbg(f"Report month {month}: {len(ks)} weeks, supply change {sup[k1] - sup[k0]:+,.1f} rETH, "
+            f"{int((m['net'].abs() >= MOVER).sum())} addresses moved {MOVER:,.0f}+ rETH")
     big = pd.DataFrame({"net_since_2024": net["net"], "net_since_saturn1": net_s1["net"]}).fillna(0)
     big = big[(big.index != ZERO) & ~big.index.isin(list(labels))
               & ((big["net_since_2024"].abs() >= BIG) | (big["net_since_saturn1"].abs() >= BIG))].copy()

@@ -1,0 +1,52 @@
+name: Monthly report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "analysis/report.py"
+      - "tests/test_report.py"
+      - "reports/notes/**"
+      - ".github/workflows/report.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "29 9 3 * *"   # 3rd of each month, 09:29 UTC: after the holder (2nd) and lending (3rd) runs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Offline test
+        run: python tests/test_report.py
+      - name: Write the monthly report
+        run: python analysis/report.py
+      - name: Commit the report
+        if: always()
+        run: |
+          git config user.name "Nishikawa"
+          git config user.email "130159335+NishikawaButterfly@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp reports/*.md reports/*.png "$RUNNER_TEMP/out/" 2>/dev/null || true
+          for attempt in 1 2 3; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            mkdir -p reports
+            cp "$RUNNER_TEMP"/out/* reports/ 2>/dev/null || true
+            git add reports
+            if git diff --cached --quiet; then echo "Nothing new to commit"; break; fi
+            git commit -q -m "Update monthly report [skip ci]"
+            if git push -q; then break; fi
+            sleep 10
+          done
