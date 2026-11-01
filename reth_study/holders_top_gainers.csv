@@ -1,7 +1,7 @@
 address,sent,received,n_out,n_in,net,label,category,is_contract,name,profile,tags,ens,balance_start,balance_end,balance_check
-0x03bf48b8a1b37fbead1ecabcf15b98b924ffa5ac,25591.55730534125,33316.16299622475,7985.0,11527.0,7724.605690883502,Symbiotic rETH default collateral,Restaking,True,DefaultCollateral_Rocket Pool ETH -> DefaultCollateral,token DC_rETH (DefaultCollateral_Rocket Pool ETH),,,0.0,7724.605690883497,True
-0x9074d72cc82dad1e13e454755aa8f144c479532f,5350.07792134332,11002.478360463287,1728.0,308.0,5652.400439119967,Liquity V2 rETH Active Pool,Lending and CDPs,True,ActivePool,,,,0.0,5652.400439119966,True
-0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb,63589.226180192716,66841.86629414024,238.0,271.0,3252.6401139475274,Morpho Blue,Lending and CDPs,True,Morpho,,,,0.0,3252.640113947527,True
+0x03bf48b8a1b37fbead1ecabcf15b98b924ffa5ac,25592.59740450304,33316.16299622475,7989.0,11527.0,7723.565591721712,Symbiotic rETH default collateral,Restaking,True,DefaultCollateral_Rocket Pool ETH -> DefaultCollateral,token DC_rETH (DefaultCollateral_Rocket Pool ETH),,,0.0,7723.56559172171,True
+0x9074d72cc82dad1e13e454755aa8f144c479532f,5427.368766027213,11002.478360463287,1730.0,308.0,5575.109594436074,Liquity V2 rETH Active Pool,Lending and CDPs,True,ActivePool,,,,0.0,5575.109594436073,True
+0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb,63643.29758900601,66911.89030041409,240.0,274.0,3268.592711408077,Morpho Blue,Lending and CDPs,True,Morpho,,,,0.0,3268.5927114080764,True
 0xcafea91714e55756c125b509274ede9bc91697cb,10631.33,13138.572683733455,6.0,3.0,2507.242683733455,Nexus Mutual capital pool (new),Funds and DAO treasuries,True,UpgradeableProxy -> Pool,,,,0.0,2507.242683733455,True
 0xeb92df47dbd808dec7209b811797fa5b49b4eea1,0.0,2047.9708851590658,0.0,2.0,2047.9708851590658,,,True,SafeProxy -> Safe,Safe 2-of-3,,,0.0,2047.9708851590658,True
 0x47073d5f62d0c349f8dce1d5b6349cf164002713,0.0,2000.0,0.0,1.0,2000.0,,,True,SafeProxy -> Safe,Safe 2-of-4,,,0.0,2000.0,True
