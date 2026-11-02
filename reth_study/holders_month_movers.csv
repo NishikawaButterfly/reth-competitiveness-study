@@ -8,7 +8,7 @@ address,sent,received,n_out,n_in,net,label,category,is_contract,name,profile,tag
 0xba1333333333a1ba1108e8412f11850a5c319ba9,897.8024651232607,475.16922187309933,245.0,82.0,-422.6332432501614,Balancer V3 Vault,DEX liquidity,True,Vault,,,,1167.889790322633,745.2565470724716,True,Balancer,DEX liquidity,contract,Balancer V3 Vault
 0x602ec00a59b332a1bf1d1a18d0ab73b808f59e62,393.8657555665742,0.0,3.0,0.0,-393.8657555665742,,,False,,,,,393.8657555665742,0.0,True,,Other addresses,wallet,0x602e...9e62
 0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2,500.5192979624703,162.97380416084914,105.0,12.0,-337.5454938016212,EigenLayer rETH strategy,Restaking,True,TransparentUpgradeableProxy -> StrategyBaseTVLLimits,underlying rETH,,,3913.4243039295916,3575.87881012797,True,EigenLayer,Restaking,contract,EigenLayer rETH strategy
-0x605e168cb8de305429c3f2393bd9796c9b38ed9a,275.0001903550048,0.0,3.0,0.0,-275.0001903550048,,,True,AmbireAccount7702,,,,275.0001903550048,0.0,True,,Other addresses,wallet,AmbireAccount7702
+0x605e168cb8de305429c3f2393bd9796c9b38ed9a,275.0001903550048,0.0,3.0,0.0,-275.0001903550048,,,True,,,,,275.0001903550048,0.0,True,,Other addresses,wallet,0x605e...ed9a
 0x6907ef6d0433fc70ed1a4727801460cceb08564b,0.0,100.0,0.0,1.0,100.0,,,False,,,,,0.0,100.0,True,,Other addresses,wallet,0x6907...564b
 0xf50f3276bc716b44b9e66c7fb61df6911e307080,0.0,106.49551881684867,0.0,1.0,106.49551881684867,,,False,,,,,0.0,106.49551881684867,True,,Other addresses,wallet,0xf50f...7080
 0xb7bb3bf55b991ce56b4bb891f39293e39de9dc98,0.0,117.98376592310025,0.0,2.0,117.98376592310025,,,False,,,,,0.0,117.98376592310025,True,,Other addresses,wallet,0xb7bb...dc98
